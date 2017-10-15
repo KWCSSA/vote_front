@@ -1,89 +1,33 @@
-var accountKey = 'bcc4bc28';
-var accountSecret = '6752ab0f';
-var inboundNumber = '19027028070';
+var IParser = require( './IParser' );
+var Nexmo = require( 'nexmo' );
+var logger = require( '../logger.js' ).smsLogger;
 
-var util = require( 'util' );
-var Message = require( '../types.js' ).Message;
-var Nexmo = require( 'nexmoapi' ).Nexmo;
-var logger = require( '../logger.js' );
-
-
-function NexmoMessage() {
-	Message.call( this );
-	
-	var d = new Date();
-	
-	this.Sender = '';
-	this.Message = '';
-	this.MessageID = '';
-	this.Timestamp = Math.round( d.getTime() / 1000 );
-	this.SendTime = d.toTimeString();
-	this.LogString = '';
-	this.done = function() {
-		this.LogString = 'MSG ID ' + this.MessageID + ' RECV\'d ON ' + this.SendTime + ' FROM ' + this.Sender + ':\n';
-		this.LogString += '\t' + this.Message + '\n';
-	};
-}
-
-
-util.inherits( NexmoMessage, Message );
-
-function NexmoParser() {
-	
-	this.checkMessage = function( msg ) {
-		
-		if( typeof msg != "object" ) {
-			return false;
-		}
-		
-		if( typeof msg.msisdn == "undefined" ||
-			typeof msg.to == "undefined" ||
-			typeof msg.messageId == "undefined" ||
-			typeof msg.text == "undefined" ) {
-				
-			return false;
-		}
-		
-		if( msg.to !== inboundNumber ) {
-			return false;
-		}
-		
-		return true;
+class NexmoParser extends IParser.IParser{
+	constructor(){
+		super();
+		this.nexmo_api = new Nexmo({
+			apiKey: process.env.nexmoApiKey,
+			apiSecret: process.env.nexmoApiSecret,
+		});
 	}
-	
-	this.parseMessage = function( msg ) {
-		
-		var ts = Math.round( new Date().getTime() / 1000 );
-		
-		var ret = new NexmoMessage();
-		
-		ret.Sender = msg.msisdn;
-		ret.Message = msg.text;
-		ret.MessageID = msg.messageId;
-		ret.done();
-		
-		return ret;
-	}
-	
-	this.nexmo_api = new Nexmo( accountKey, accountSecret, true );
-	
-}
 
-NexmoParser.prototype.sendMessage = function( number, msg ) {
-	
-	this.nexmo_api.send( inboundNumber, number, msg, function( err ) {
-		if( err ) {
-			logger.errLog( 'Cannot send SMS to ' + number + ' content ' + msg );
-		} else {
-			logger.infoLog( 'SMS sent to ' + number );
-		}
-	} );
-	
-};
+	parseMessage(msg){
+		return new IParser.Message(msg.msisdn, msg.text, msg.messageId);
+	}
+
+	sendMessage(number,msg){
+		this.nexmo_api.message.sendSms(process.env.nexmoVirtualNumber, number, msg, (err, apiResponse)=>{
+			//err is slightly broken, so we are implementing our own error handling
+			if (err || apiResponse == null || apiResponse.messages[0].status !== '0'){
+				logger.error('Cannot send SMS to ' + number + ' Content ' + msg );			
+			} else {
+				logger.info('SMS sent to ' + number + ' MessageID: ' + apiResponse.messages[0]['message-id']);
+			}
+		});
+	}
+}
 
 module.exports.NexmoParser = NexmoParser;
-module.exports.NexmoMessage = NexmoMessage;
-
 
 // {
 // 	"msisdn":"15197816103",

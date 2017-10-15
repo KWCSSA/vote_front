@@ -15,4 +15,12 @@ var logger = new(winston.Logger)({
 	]
 });
 
-module.exports = logger;
+var smsLogger = new(winston.Logger)({
+	transports: [
+		new winston.transports.File({ name: 'error', filename: `./${logDir}/smsError.log`, level: 'error' }),
+    	new winston.transports.File({ name: 'info', filename: `./${logDir}/smsInfo.log`, level: 'info' })
+	]
+});
+
+module.exports.logger = logger;
+module.exports.smsLogger = smsLogger;

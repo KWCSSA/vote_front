@@ -1,5 +1,5 @@
 var db = require( '../db.js' );
-var types = require( '../types.js' );
+var types = require( './parser/IParser.js' );
 var Message = types.Message;
 var voters = require( '../voters.js' );
 var config = require( '../config.js' );

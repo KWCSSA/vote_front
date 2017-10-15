@@ -1,10 +1,10 @@
-var newrelic = require( 'newrelic' );
+require('dotenv').config()
 
 var fs = require( 'fs' );
 var express = require( 'express' );
 var app = express();
 var util = require( 'util' );
-var types = require( './types.js' );
+var types = require( './parser/IParser.js' );
 var Message = types.Message;
 var SingleVote = require( './matches/single.js' ).SingleVote;
 var TimedDuelVote = require( './matches/timed_duel.js' ).TimedDuelVote;
@@ -15,7 +15,6 @@ var logger = require( './logger.js' );
 var Controller = require( './controller.js' ).Controller;
 
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
-var NexmoMessage = require( './parsers/nexmoparser.js' ).NexmoMessage;
 
 var parser = new NexmoParser();
 var match = new TimedDuelVote();

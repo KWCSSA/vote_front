@@ -1,4 +1,4 @@
-var types = require( '../types.js' );
+var types = require( '../parser/IParser.js' );
 var Message = types.Message;
 var Response = types.Response;
 var NexmoMessage = require( '../parsers/nexmoparser.js' ).NexmoMessage;

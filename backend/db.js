@@ -1,27 +1,23 @@
 var mysql = require('mysql');
-var logger = require('logger.js');
-
-var dbHost = 'localhost';
-var dbName = 'smsvoting';
-var dbUser = 'smsvoting';
-var dbPwd = 'smsvoting';
+var logger = require('./logger.js');
+require('dotenv').config()
 
 var pool = mysql.createPool({
-	host: dbHost,
-	user: dbUser,
-	password: dbPwd,
-	database: dbName
+	host: process.env.dbHost,
+	user: process.env.dbUser,
+	password: process.env.dbPwd,
+	database: process.env.dbName
 });
 
 function runQuery(query, values) {
 	return new Promise((resolve, reject) => {
-		pool.query(query, values, (err2, results, fields => {
-			if (err2) {
-				logger.error('Cannot retrieve data from database' + err2);
-				return reject(err2);
+		pool.query(query, values, (err, results, fields) => {
+			if (err) {
+				logger.error('Cannot retrieve data from database' + err);
+				return reject(err);
 			}
 			return resolve(results);
-		}));
+		});
 	});
 }
 

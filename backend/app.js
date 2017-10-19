@@ -43,29 +43,6 @@ function LogMessage( msg ) {
 	} );
 }
 
-function validateAdminIP( ip, callback ) {
-	config.getAttribute( 'admin_ip', function( err, val ) {
-		if( err ) {
-			logger.errLog( 'Cannot retrive admin IP from database ' + err );
-			callback( false );
-			
-		} else if( val == '' ) {
-			
-			config.setAttribute( 'admin_ip', ip, null );
-			logger.infoLog( ( 'Setting admin IP to ' + ip ).cyan );
-			callback( true );
-			
-		} else if( ip !== val ) {
-			
-			logger.errLog( 'Invalid admin IP ' + ip );
-			callback( false );
-			
-		} else {
-			callback( true );
-		}
-	} );
-}
-
 app.post( '/inbound', function( req, res ) {
 	var msg;
 	
@@ -105,30 +82,25 @@ app.post( '/control', function( req, res ) {
 	console.log( 'Incoming system control from ' + req.ip + ' content ' + JSON.stringify( req.body ).green );
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	
-	control.validateAdminIP( req.ip, function( result ) {
-		if( result ) {
+	control.validateAdminIP( req.ip ).then((res) => {
+		if (res)
 			control.processControl( req.body );
-		}
-	} );
-	
-	res.send( '' );
+	}).catch ((err) => logger.error('Cannot validate admin IP ' + err)).then(() => res.send(''));
 } );
 
 app.post( '/votectrl', function( req, res ) {
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	console.log( 'Incoming vote control from ' + req.ip + ' content ' + JSON.stringify( req.body ).green );
-	control.validateAdminIP( req.ip, function( result ) {
-		if( result ) {
+	control.validateAdminIP( req.ip ).then((res) => {
+		if (res) {
 			if( control.getResultMode() != 'vote' ) {
 				logger.infoLog( 'Switched to vote mode' );
 			}
 			control.setResultMode( 'vote' );
 			match.processControl( req.body );
 		}
-	} );
-	
-	res.send( 200, '{}' );
-} );
+	}).catch ((err) => logger.error('Cannot validate admin IP ' + err)).then(() => res.send( 200, '{}' ));
+});
 
 app.get( '/result', function( req, res ) {
 	res.set( 'Access-Control-Allow-Origin', '*' );

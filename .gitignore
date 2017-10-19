@@ -1,2 +1,4 @@
 init.sql
 *.log
+.env
+node_modules/

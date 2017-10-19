@@ -1,5 +1,5 @@
 var db = require( './db.js' );
-var logger = require( './logger.js' );
+var logger = require( './logger.js' ).logger;
 
 var codePattern = new RegExp( '^[a-zA-Z]{8}$', '' );
 var votePattern = new RegExp( '^[0-9]{1,}$', '' );
@@ -25,8 +25,11 @@ function addUser( number, code ) {
 }
 
 function getAllVoters( votedInRound ) {
-	var query = ( typeof votedInRound == 'number' ) ? 'SELECT DISTINCT voter FROM votes WHERE round = ' + votedInRound : 'SELECT phone_number FROM voters';
-	return db.runQuery( query, []).then((result) => {return result.map(x => x['voter'])});
+	if ( typeof votedInRound == 'number' ){
+		return db.runQuery( 'SELECT DISTINCT voter FROM votes WHERE round = ' + votedInRound, []).then((result) => {return result.map(x => x['voter'])});
+	} else {
+		return db.runQuery( 'SELECT phone_number FROM voters', []).then((result) => {return result.map(x => x['phone_number'])});
+	}
 }
 
 module.exports.addUser = addUser;

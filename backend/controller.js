@@ -1,4 +1,4 @@
-var logger = require( './logger.js' );
+var logger = require( './logger.js' ).logger;
 var db = require( './db.js' );
 var voters = require( './voters.js' );
 var config = require( './config.js' );

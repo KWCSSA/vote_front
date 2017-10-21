@@ -7,6 +7,7 @@ class candidates{
         this.id = id;
         this.name = name;
         this.vote = 0;
+        this.score = 0;
     }
 
     addVote(count){
@@ -20,25 +21,29 @@ class candidates{
 
 class groupMatch{
     constructor(){
-        this.initiated = false;
+        this.state = 'idle';
+        this.initialized = false;
     }
 
     init(votePerUser, listOfCandidates){
         //did it this way to prevent escaping
         return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );').then((res) => {
             this.listOfCandidates = res.map((x) => new candidates(x['c_id'], x['c_name']))
-            this.voting = false;
-            this.votePerUser = votePerUser;
-            this.initiated = true;
+            this.votePerUser = parseInt(votePerUser) || 3;
+            this.initialized = true;
         }).catch((err) => logger.error('Cannot initialize match ' + err))
     }
 
-    clearMatch(){
-        this.initiated = false;
+    setState(newstate){
+        if(!this.initialized){
+            logger.error('Match not initialized, set state failed');
+        } else {
+            this.state = newstate;
+        }
     }
-
-    getAllCandidates(){
-        return this.listOfCandidates;
+    
+    compileResult(){
+        return {mode: 'vote', state: this.state, data: (this.state === 'idle') ? null : this.listOfCandidates};
     }
 
     addVoteToCandidate(id, votecount){
@@ -51,25 +56,23 @@ class groupMatch{
 
     writeResultToDb(){
         for(candidate in listOfCandidates){
-            db.runQuery('UPDATE smsvoting.candidates SET vote=? WHERE id=?', [candidate.vote, candidate.id])
+            db.runQuery('INSERT INTO smsvoting.groupResult(vote, id) VALUES( ?, ? )', [candidate.vote, candidate.id])
         }
     }
 
-    processVote(voteString){
+    processVote(voteString, user){
         var arrayOfVotes = voteString.split('/[^0-9]/').map(Number).filter((x)=> {x in this.listOfCandidates.map((y) => {y.id})});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
-        for(vote in filtered){
-            this.addVoteToCandidate(vote, 1);
-        }
-        
+        logger.info('User ' + user + ' has voted on ' + filtered);
+        db.runQuery('INSERT INTO votes(round, cid, voter) VALUES( ?, ?, ? )', [ 0, filtered, user ]).then(() => {
+            for(vote in filtered){
+                this.addVoteToCandidate(vote, 1);
+            }
+        }).catch((err) => {logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err )});
     }
 
-    stopVoting(){
-        this.voting = false;
-    }
-
-    startVoting(){
-        this.voting = true;
+    isVoting(){
+        return (this.state === 'voting')
     }
 }
 

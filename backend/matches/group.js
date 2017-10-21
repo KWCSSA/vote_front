@@ -19,7 +19,9 @@ class candidates{
 }
 
 class groupMatch{
-    constructor(){}
+    constructor(){
+        this.initiated = false;
+    }
 
     init(votePerUser, listOfCandidates){
         //did it this way to prevent escaping
@@ -27,7 +29,12 @@ class groupMatch{
             this.listOfCandidates = res.map((x) => new candidates(x['c_id'], x['c_name']))
             this.voting = false;
             this.votePerUser = votePerUser;
+            this.initiated = true;
         }).catch((err) => logger.error('Cannot initialize match ' + err))
+    }
+
+    clearMatch(){
+        this.initiated = false;
     }
 
     getAllCandidates(){
@@ -54,6 +61,7 @@ class groupMatch{
         for(vote in filtered){
             this.addVoteToCandidate(vote, 1);
         }
+        
     }
 
     stopVoting(){

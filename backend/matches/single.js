@@ -1,4 +1,4 @@
-var types = require( '../types.js' );
+var types = require( '../parser/IParser.js' );
 var Message = types.Message;
 var Response = types.Response;
 var NexmoMessage = require( '../parsers/nexmoparser.js' ).NexmoMessage;
@@ -6,7 +6,7 @@ var db = require( '../db.js' );
 var config = require( '../config.js' );
 var voters = require( '../voters.js' );
 var colors = require( 'colors' );
-var logger = require( '../logger.js' );
+var logger = require( '../logger.js' ).logger;
 
 
 function SingleVote() {

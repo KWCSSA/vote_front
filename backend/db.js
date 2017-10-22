@@ -1,37 +1,37 @@
 var mysql = require('mysql');
+var logger = require('./logger.js').logger;
+require('dotenv').config()
 
-var dbHost = 'localhost';
-var dbName = 'smsvoting';
-var dbUser = 'smsvoting';
-var dbPwd = 'smsvoting';
+var pool = mysql.createPool({
+	host: process.env.dbHost,
+	user: process.env.dbUser,
+	password: process.env.dbPwd,
+	database: process.env.dbName
+});
 
-var pool = mysql.createPool( {
-	host: dbHost,
-	user: dbUser,
-	password: dbPwd,
-	database: dbName
-} );
-
-function runQuery( query, values, callback ) {
-
-	pool.getConnection( function( err, connection ) {
-		if( err ) {
-			console.log( 'Cannot connect to database ' + err );
-		} else {
-			connection.query( query, values, callback );
-			connection.release();
-		}
-	} );
+function runQuery(query, values) {
+	return new Promise((resolve, reject) => {
+		pool.query(query, values, (err, results, fields) => {
+			if (err) {
+				logger.error('Cannot retrieve data from database' + err);
+				return reject(err);
+			}
+			return resolve(results);
+		});
+	});
 }
 
 function closeDB() {
-	pool.end( function( err ) {
-		if( err ) {
-			console.log( 'Cannot close DB pool ' + err );
-		} else {
-			console.log( 'Connection to database terminated' );
-		}
-	} );
+	return new Promise((resolve, reject) => {
+		pool.end(function (err) {
+			if (err) {
+				console.log('Cannot close DB pool ' + err);
+				return reject(err);
+			} else {
+				console.log('Connection to database terminated');
+			}
+		});
+	});
 }
 
 module.exports.runQuery = runQuery;

@@ -1,9 +1,9 @@
 var db = require( '../db.js' );
-var types = require( '../types.js' );
+var types = require( './parser/IParser.js' );
 var Message = types.Message;
 var voters = require( '../voters.js' );
 var config = require( '../config.js' );
-var logger = require( '../logger.js' );
+var logger = require( '../logger.js' ).logger;
 var util = require( 'util' );
 var async = require( 'async' );
 var EventEmitter = require( 'events' ).EventEmitter;

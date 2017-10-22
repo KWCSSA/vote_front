@@ -19,6 +19,7 @@ var match = new GroupMatch();
 var draw = new poller();
 var currentMode = "poll";
 
+app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
 app.post( '/inbound', function( req, res ) {
@@ -34,7 +35,7 @@ app.post( '/inbound', function( req, res ) {
 			}
 		}
 	} else {
-		logger.error( 'Cannot process received message ' + JSON.stringify( req.body ) );
+		logger.error( 'Cannot process received message ' + req.body );
 	}
 } );
 

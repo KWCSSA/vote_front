@@ -56,7 +56,7 @@ class groupMatch{
 
     writeResultToDb(){
         for(candidate in listOfCandidates){
-            db.runQuery('INSERT INTO smsvoting.groupResult(vote, id) VALUES( ?, ? )', [candidate.vote, candidate.id])
+            db.runQuery('INSERT INTO smsvoting.group_result(vote, id) VALUES( ?, ? )', [candidate.vote, candidate.id])
         }
     }
 

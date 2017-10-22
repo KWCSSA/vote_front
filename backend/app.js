@@ -40,7 +40,7 @@ app.post( '/inbound', function( req, res ) {
 
 app.use(['/votectrl', '/control'], function (req, res, next) {
 	res.set( 'Access-Control-Allow-Origin', '*' );
-	console.log( 'Incoming system control from ' + req.body.ip + ' content ' + JSON.stringify( req.body ).green );
+	console.log( 'Incoming system control from ' + req.body.ip + ' content ' + JSON.stringify( req.body ) );
 	config.getAttribute('admin_ip').then((res) => {
 		if (res[0]['value'] === req.body.ip){
 			next();

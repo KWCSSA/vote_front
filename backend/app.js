@@ -17,9 +17,9 @@ var app = express();
 var parser = new NexmoParser();
 var match = new GroupMatch();
 var draw = new poller();
-var currentMode = "poll"
+var currentMode = "poll";
 
-app.use( bodyParser.json() );
+app.use(bodyParser.json());
 
 app.post( '/inbound', function( req, res ) {
 	if( parser.checkMessage( req.body ) ) {
@@ -38,6 +38,21 @@ app.post( '/inbound', function( req, res ) {
 	}
 } );
 
+app.use(['/votectrl', '/control'], function (req, res, next) {
+	res.set( 'Access-Control-Allow-Origin', '*' );
+	console.log( 'Incoming system control from ' + req.body.ip + ' content ' + JSON.stringify( req.body ).green );
+	config.getAttribute('admin_ip').then((res) => {
+		if (res[0]['value'] === req.body.ip){
+			next();
+		} else {
+			throw('ip does not match');
+		}
+	}).catch((err) => {
+		logger.error('Cannot validate admin ip -- ' + err);
+		res.sendStatus( 401 );
+	})
+})
+
 app.post( '/control', function( req, res ) {
 	if( req.body.opcode === 'poll' ) {
 		draw.pollAudienceWinner();
@@ -53,13 +68,14 @@ app.post( '/control', function( req, res ) {
 	} else {
 		logger.error( 'Invalid controller command' );
 	}
+	res.sendStatus(200);
 });
 
 app.post( '/votectrl', function( req, res ) {
 	if( currentMode != 'vote' ) {
 		logger.info( 'Switched to vote mode' );
 	}
-	this.currentMode = 'vote';
+	currentMode = 'vote';
 	switch(req.body.opcode){
 		case 'setcids':
 			match.init(req.body.votePerUser, req.body.cids);
@@ -70,7 +86,10 @@ app.post( '/votectrl', function( req, res ) {
 		case 'addvote':
 			req.body.reset ? match.addVoteToCandidate(req.body.candidate, req.body.score) : match.setCandidateVote(req.body.candidate, req.body.score);
 			break;
+		default:
+			res.sendStatus(500);
 	}
+	if (!res.headersSent) res.sendStatus(200);
 });
 
 app.get( '/result', function( req, res ) {
@@ -84,22 +103,6 @@ app.get( '/result', function( req, res ) {
 		res.sendStatus( 500 );
 	}
 } );
-
-app.use(['/votectrl', '/control'], function (req, res, next) {
-	res.set( 'Access-Control-Allow-Origin', '*' );
-	console.log( 'Incoming system control from ' + req.ip + ' content ' + JSON.stringify( req.body ).green );
-	config.getAttribute('admin_ip').then((res) => {
-		if (res[0]['value'] === ip){
-			next();
-		} else {
-			res.sendStatus( 401 );
-		}
-	}).catch((err) => {
-		logger.error('Cannot validate admin ip ' + err);
-		res.sendStatus( 401 );
-	})
-})
-
 
 app.get( '/', function( req, res ) {
 	res.sendStatus( 401 );

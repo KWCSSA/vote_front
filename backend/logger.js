@@ -11,7 +11,8 @@ var logger = new(winston.Logger)({
 	level: 'info',
 	transports: [
 		new winston.transports.File({ name: 'error', filename: `./${logDir}/error.log`, level: 'error' }),
-    	new winston.transports.File({ name: 'other', filename: `./${logDir}/combined.log` })
+		new winston.transports.File({ name: 'other', filename: `./${logDir}/combined.log` }),
+		new winston.transports.Console({name: 'console', })
 	]
 });
 

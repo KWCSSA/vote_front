@@ -97,7 +97,7 @@ app.post( '/votectrl', function( req, res ) {
 			match.setState(req.body.newState)
 			break;
 		case 'addvote':
-			req.body.reset ? match.addVoteToCandidate(req.body.candidate, req.body.score) : match.setCandidateVote(req.body.candidate, req.body.score);
+			req.body.reset ? match.setCandidateVote(req.body.candidate, parseInt(req.body.score)) : match.addVoteToCandidate(req.body.candidate, parseInt(req.body.score));
 			break;
 		default:
 			res.sendStatus(500);

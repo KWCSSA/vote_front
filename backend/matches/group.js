@@ -21,7 +21,7 @@ class candidates{
 
 class groupMatch{
     constructor(){
-        this.state = 'idle';
+        this.state = 'IDLE';
         this.initialized = false;
     }
 
@@ -43,15 +43,15 @@ class groupMatch{
     }
     
     compileResult(){
-        return {mode: 'vote', state: this.state, data: (this.state === 'idle') ? null : this.listOfCandidates};
+        return {mode: 'vote', state: this.state, data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
     }
 
     addVoteToCandidate(id, votecount){
-        this.listOfCandidates.find((x) => (x.id === parseInt(id))).addVote(votecount);
+        this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).addVote(votecount);
     }
 
     setCandidateVote(id, votecount){
-        this.listOfCandidates.find((x) => (x.id === parseInt(id))).setVote(votecount);
+        this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).setVote(votecount);
     }
 
     writeResultToDb(){
@@ -61,13 +61,13 @@ class groupMatch{
     }
 
     processVote(voteString, user){
-        let candidateIds = this.listOfCandidates.map((y) => {return (y.id).toString});
-        var arrayOfVotes = voteString.split(/[^0-9]/).map(Number).filter((x)=> {x in candidateIds});
+        let candidateIds = this.listOfCandidates.map((y) => {return y.id});
+        var arrayOfVotes = voteString.split(/[^0-9]+/).map(Number).filter((x)=> {return (x in candidateIds)});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
-        if (filtered.length != 0){
+if (filtered.length != 0){
             db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
-                for(vote in filtered){
-                    this.addVoteToCandidate(vote, 1);
+                for(var vote in filtered){
+			this.addVoteToCandidate(filtered[vote], 1);
                 }
             }).then(()=>{
                 logger.info('User ' + user + ' has voted on ' + filtered);

@@ -23,7 +23,8 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
 app.post( '/inbound', function( req, res ) {
-	if( parser.checkMessage( req.body ) ) {
+	let nexmoIp = ['174.37.245.32/29', '174.36.197.192/28', '173.193.199.16/28', '119.81.44.0/28'];
+	if( nexmoIp.includes(req.ip.replace(/^.*:/, '')) ) {
 		msg = parser.parseMessage( req.body );
 		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ':\n');
 		
@@ -35,8 +36,9 @@ app.post( '/inbound', function( req, res ) {
 			}
 		}
 	} else {
-		logger.error( 'Cannot process received message ' + JSON.stringify( req.body ) );
+		logger.error( ' Invalid incoming ip ' + JSON.stringify( req.body ) );
 	}
+	res.sendStatus(200);
 } );
 
 app.use(['/votectrl', '/control'], function (req, res, next) {

@@ -12,9 +12,9 @@ class poller{
         voters.getAllVoters().then((res) => {
             if (res.length != 0){
                 logger.info( 'Selecting winner from ' + res.length + ' voters' )
-                var selection = Math.floor( Math.random() * result.length );
-                logger.infoLog( 'Winner is ' + result[ selection ] );
-                this.pollWinner = result[ selection ];
+                var selection = Math.floor( Math.random() * res.length );
+                logger.info( 'Winner is ' + res[ selection ] );
+                this.pollWinner = res[ selection ];
             } else {
                 logger.error( 'There are no voters');
             }

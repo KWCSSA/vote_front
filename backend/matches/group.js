@@ -47,11 +47,11 @@ class groupMatch{
     }
 
     addVoteToCandidate(id, votecount){
-        this.listOfCandidates.find((x) => (x.id === id)).addVote(votecount);
+        this.listOfCandidates.find((x) => (x.id === parseInt(id))).addVote(votecount);
     }
 
     setCandidateVote(id, votecount){
-        this.listOfCandidates.find((x) => (x.id === id)).setVote(votecount);
+        this.listOfCandidates.find((x) => (x.id === parseInt(id))).setVote(votecount);
     }
 
     writeResultToDb(){

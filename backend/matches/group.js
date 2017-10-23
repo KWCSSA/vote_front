@@ -61,18 +61,22 @@ class groupMatch{
     }
 
     processVote(voteString, user){
-        var arrayOfVotes = voteString.split('/[^0-9]/').map(Number).filter((x)=> {x in this.listOfCandidates.map((y) => {y.id})});
+        let candidateIds = this.listOfCandidates.map((y) => {y.id});
+        var arrayOfVotes = voteString.split('/[^0-9]/').map(Number).filter((x)=> {x in candidateIds});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
-        logger.info('User ' + user + ' has voted on ' + filtered);
-        db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered, user ]).then(() => {
-            for(vote in filtered){
-                this.addVoteToCandidate(vote, 1);
-            }
-        }).catch((err) => {logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err )});
+        if (filtered.length != 0){
+            db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
+                for(vote in filtered){
+                    this.addVoteToCandidate(vote, 1);
+                }
+            }).then(()=>{
+                logger.info('User ' + user + ' has voted on ' + filtered);
+            }).catch((err) => {logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err )});
+        }
     }
 
     isVoting(){
-        return (this.state === 'voting')
+        return (this.state === 'VOTING')
     }
 }
 

@@ -39,7 +39,7 @@ app.post( '/inbound', function( req, res ) {
 			voters.addUser( msg.sender, msg.message );
 		} else {
 			if (match.isVoting()) {
-				match.processVote( msg.message, message.sender );
+				match.processVote( msg.message, msg.sender );
 			} else {
 				logger.error(' User ' + msg.sender + ' attempted to vote while voting was closed.');
 			}

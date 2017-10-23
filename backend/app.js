@@ -34,12 +34,14 @@ app.post( '/inbound', function( req, res ) {
 	})
 	if( valid ) {
 		msg = parser.parseMessage( req.body );
-		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.text +':\n');
-		if( voters.isRegistration( msg.Message ) ) {
+		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
+		if( voters.isRegistration( msg.message ) ) {
 			voters.addUser( msg.sender, msg.message );
 		} else {
 			if (match.isVoting()) {
 				match.processVote( msg.message, message.sender );
+			} else {
+				logger.error(' User ' + msg.sender + ' attempted to vote while voting was closed.');
 			}
 		}
 	} else {

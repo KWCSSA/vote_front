@@ -3,7 +3,7 @@ class Message{
 		this.sender = sender;
 		this.message = message;
 		this.messageId = messageId;
-		this.messageTime = (new Date().toUTCString);
+		this.messageTime = (new Date().toUTCString());
 	}
 }
 

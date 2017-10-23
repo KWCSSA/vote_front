@@ -34,8 +34,7 @@ app.post( '/inbound', function( req, res ) {
 	})
 	if( valid ) {
 		msg = parser.parseMessage( req.body );
-		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ':\n');
-		
+		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.message-timestamp + ' FROM ' + msg.sender + ' DATA ' + msg.text +':\n');
 		if( voters.isRegistration( msg.Message ) ) {
 			voters.addUser( msg.sender, msg.message );
 		} else {

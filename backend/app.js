@@ -35,7 +35,7 @@ app.post( '/inbound', function( req, res ) {
 			}
 		}
 	} else {
-		logger.error( 'Cannot process received message ' + req.body );
+		logger.error( 'Cannot process received message ' + JSON.stringify( req.body ) );
 	}
 } );
 

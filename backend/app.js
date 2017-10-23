@@ -7,6 +7,7 @@ var config = require( './config.js' );
 var logger = require( './logger.js' ).logger;
 var smslogger = require('./logger.js').smsLogger;
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
+var Netmask = require('netmask').Netmask
 
 var express = require( 'express' );
 var bodyParser = require('body-parser')
@@ -19,12 +20,19 @@ var match = new GroupMatch();
 var draw = new poller();
 var currentMode = "poll";
 
+const nexmoIp = [new Netmask('174.37.245.32/29'), new Netmask('174.36.197.192/28'), new Netmask('173.193.199.16/28'), new Netmask('119.81.44.0/28')];
+
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
 app.post( '/inbound', function( req, res ) {
-	let nexmoIp = ['174.37.245.32/29', '174.36.197.192/28', '173.193.199.16/28', '119.81.44.0/28'];
-	if( nexmoIp.includes(req.ip.replace(/^.*:/, '')) ) {
+	let valid = false;
+	nexmoIp.forEach((block) => {
+		if (block.contains(req.ip.replace(/^.*:/, ''))) {
+			valid = true;
+		}
+	})
+	if( valid ) {
 		msg = parser.parseMessage( req.body );
 		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ':\n');
 		

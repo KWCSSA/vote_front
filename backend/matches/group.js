@@ -61,8 +61,8 @@ class groupMatch{
     }
 
     processVote(voteString, user){
-        let candidateIds = this.listOfCandidates.map((y) => {y.id});
-        var arrayOfVotes = voteString.split('/[^0-9]/').map(Number).filter((x)=> {x in candidateIds});
+        let candidateIds = this.listOfCandidates.map((y) => {return (y.id).toString});
+        var arrayOfVotes = voteString.split(/[^0-9]/).map(Number).filter((x)=> {x in candidateIds});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
         if (filtered.length != 0){
             db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {

@@ -1,6 +1,7 @@
 var db = require( '../db.js' );
 var logger = require('../logger.js').logger
 var voters = require( '../voters.js' );
+var timer = require('../timer.js');
 
 class candidates{
     constructor(id, name){
@@ -23,6 +24,7 @@ class groupMatch{
     constructor(){
         this.state = 'IDLE';
         this.initialized = false;
+        this.timer = new timer(60000, ()=>{this.state = 'RESULT'}, 1000);
     }
 
     init(votePerUser, listOfCandidates){
@@ -39,11 +41,14 @@ class groupMatch{
             logger.error('Match not initialized, set state failed');
         } else {
             this.state = newstate;
+            if (newstate === 'VOTING'){
+                this.timer.start();
+            }
         }
     }
     
     compileResult(){
-        return {mode: 'vote', state: this.state, data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
+        return {mode: 'vote', state: this.state, timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
     }
 
     addVoteToCandidate(id, votecount){

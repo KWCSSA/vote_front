@@ -43,6 +43,8 @@ class groupMatch{
             this.state = newstate;
             if (newstate === 'VOTING'){
                 this.timer.start();
+            } else {
+                this.timer.stop();
             }
         }
     }

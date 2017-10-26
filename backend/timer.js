@@ -17,7 +17,6 @@ class timer{
     }
 
     tick(){
-        console.log(this.timeRemain);
         this.timeRemain -= this.interval;
         if (this.timeRemain <= 0){   
             this.stop();

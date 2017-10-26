@@ -7,6 +7,7 @@ var config = require( './config.js' );
 var logger = require( './logger.js' ).logger;
 var smslogger = require('./logger.js').smsLogger;
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
+var Netmask = require('netmask').Netmask
 
 var express = require( 'express' );
 var bodyParser = require('body-parser')
@@ -17,26 +18,53 @@ var app = express();
 var parser = new NexmoParser();
 var match = new GroupMatch();
 var draw = new poller();
-var currentMode = "poll"
+var currentMode = "poll";
 
-app.use( bodyParser.json() );
+const nexmoIp = [new Netmask('174.37.245.32/29'), new Netmask('174.36.197.192/28'), new Netmask('173.193.199.16/28'), new Netmask('119.81.44.0/28')];
+
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json());
 
 app.post( '/inbound', function( req, res ) {
-	if( parser.checkMessage( req.body ) ) {
+	let valid = false;
+	nexmoIp.forEach((block) => {
+		if (block.contains(req.ip.replace(/^.*:/, ''))) {
+			valid = true;
+		}
+	})
+	if( valid ) {
 		msg = parser.parseMessage( req.body );
-		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ':\n');
-		
-		if( voters.isRegistration( msg.Message ) ) {
+		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
+		if( voters.isRegistration( msg.message ) ) {
 			voters.addUser( msg.sender, msg.message );
 		} else {
 			if (match.isVoting()) {
-				match.processVote( msg.message, message.sender );
+				match.processVote( msg.message, msg.sender );
+			} else {
+				logger.error(' User ' + msg.sender + ' attempted to vote while voting was closed.');
 			}
 		}
 	} else {
-		logger.error( 'Cannot process received message ' + JSON.stringify( req.body ) );
+		logger.error( ' Invalid incoming ip ' + JSON.stringify( req.body ) );
 	}
+	res.sendStatus(200);
 } );
+
+app.use(['/votectrl', '/control'], function (req, res, next) {
+	let ip = req.ip.replace(/^.*:/, '');
+	res.set( 'Access-Control-Allow-Origin', '*' );
+	console.log( 'Incoming system control from ' + ip + ' content ' + JSON.stringify( req.body ) );
+	config.getAttribute('admin_ip').then((res) => {
+		if (res[0]['value'] === ip){
+			next();
+		} else {
+			throw('ip does not match');
+		}
+	}).catch((err) => {
+		logger.error('Cannot validate admin ip -- ' + err);
+		res.sendStatus( 401 );
+	})
+})
 
 app.post( '/control', function( req, res ) {
 	if( req.body.opcode === 'poll' ) {
@@ -53,13 +81,14 @@ app.post( '/control', function( req, res ) {
 	} else {
 		logger.error( 'Invalid controller command' );
 	}
+	res.sendStatus(200);
 });
 
 app.post( '/votectrl', function( req, res ) {
 	if( currentMode != 'vote' ) {
 		logger.info( 'Switched to vote mode' );
 	}
-	this.currentMode = 'vote';
+	currentMode = 'vote';
 	switch(req.body.opcode){
 		case 'setcids':
 			match.init(req.body.votePerUser, req.body.cids);
@@ -68,9 +97,12 @@ app.post( '/votectrl', function( req, res ) {
 			match.setState(req.body.newState)
 			break;
 		case 'addvote':
-			req.body.reset ? match.addVoteToCandidate(req.body.candidate, req.body.score) : match.setCandidateVote(req.body.candidate, req.body.score);
+			req.body.reset ? match.setCandidateVote(req.body.candidate, parseInt(req.body.score)) : match.addVoteToCandidate(req.body.candidate, parseInt(req.body.score));
 			break;
+		default:
+			res.sendStatus(500);
 	}
+	if (!res.headersSent) res.sendStatus(200);
 });
 
 app.get( '/result', function( req, res ) {
@@ -84,22 +116,6 @@ app.get( '/result', function( req, res ) {
 		res.sendStatus( 500 );
 	}
 } );
-
-app.use(['/votectrl', '/control'], function (req, res, next) {
-	res.set( 'Access-Control-Allow-Origin', '*' );
-	console.log( 'Incoming system control from ' + req.ip + ' content ' + JSON.stringify( req.body ).green );
-	config.getAttribute('admin_ip').then((res) => {
-		if (res[0]['value'] === ip){
-			next();
-		} else {
-			res.sendStatus( 401 );
-		}
-	}).catch((err) => {
-		logger.error('Cannot validate admin ip ' + err);
-		res.sendStatus( 401 );
-	})
-})
-
 
 app.get( '/', function( req, res ) {
 	res.sendStatus( 401 );

@@ -27,7 +27,7 @@ class NexmoParser extends IParser.IParser{
 	}
 
 	checkMessage(msg){ 
-		return (typeof msg == "Object" && typeof msg.msisdn !== "undefined" && msg.to === process.env.nexmoVirtualNumber && typeof msg.messageId !== "undefined" && typeof msg.text !== "undefined")
+		return ((typeof msg.msisdn !== "undefined") && (msg.to === process.env.nexmoVirtualNumber) && (typeof msg.messageId !== "undefined") && (typeof msg.text !== "undefined"));
 	}
 }
 

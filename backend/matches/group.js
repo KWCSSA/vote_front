@@ -1,6 +1,7 @@
 var db = require( '../db.js' );
 var logger = require('../logger.js').logger
 var voters = require( '../voters.js' );
+var timer = require('../timer.js');
 
 class candidates{
     constructor(id, name){
@@ -21,8 +22,9 @@ class candidates{
 
 class groupMatch{
     constructor(){
-        this.state = 'idle';
+        this.state = 'IDLE';
         this.initialized = false;
+        this.timer = new timer(60000, ()=>{this.state = 'RESULT'}, 1000);
     }
 
     init(votePerUser, listOfCandidates){
@@ -39,19 +41,22 @@ class groupMatch{
             logger.error('Match not initialized, set state failed');
         } else {
             this.state = newstate;
+            if (newstate === 'VOTING'){
+                this.timer.start();
+            }
         }
     }
     
     compileResult(){
-        return {mode: 'vote', state: this.state, data: (this.state === 'idle') ? null : this.listOfCandidates};
+        return {mode: 'vote', state: this.state, timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
     }
 
     addVoteToCandidate(id, votecount){
-        this.listOfCandidates.find((x) => (x.id === id)).addVote(votecount);
+        this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).addVote(votecount);
     }
 
     setCandidateVote(id, votecount){
-        this.listOfCandidates.find((x) => (x.id === id)).setVote(votecount);
+        this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).setVote(votecount);
     }
 
     writeResultToDb(){
@@ -61,18 +66,22 @@ class groupMatch{
     }
 
     processVote(voteString, user){
-        var arrayOfVotes = voteString.split('/[^0-9]/').map(Number).filter((x)=> {x in this.listOfCandidates.map((y) => {y.id})});
+        let candidateIds = this.listOfCandidates.map((y) => {return y.id});
+        var arrayOfVotes = voteString.split(/[^0-9]+/).map(Number).filter((x)=> {return (x in candidateIds)});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
-        logger.info('User ' + user + ' has voted on ' + filtered);
-        db.runQuery('INSERT INTO votes(round, cid, voter) VALUES( ?, ?, ? )', [ 0, filtered, user ]).then(() => {
-            for(vote in filtered){
-                this.addVoteToCandidate(vote, 1);
-            }
-        }).catch((err) => {logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err )});
+if (filtered.length != 0){
+            db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
+                for(var vote in filtered){
+			this.addVoteToCandidate(filtered[vote], 1);
+                }
+            }).then(()=>{
+                logger.info('User ' + user + ' has voted on ' + filtered);
+            }).catch((err) => {logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err )});
+        }
     }
 
     isVoting(){
-        return (this.state === 'voting')
+        return (this.state === 'VOTING')
     }
 }
 

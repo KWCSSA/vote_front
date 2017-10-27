@@ -6,6 +6,7 @@ var voters = require( './voters.js' );
 var config = require( './config.js' );
 var logger = require( './logger.js' ).logger;
 var smslogger = require('./logger.js').smsLogger;
+var syslogger = require('./logger.js').sysLogger;
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
 var Netmask = require('netmask').Netmask
 
@@ -45,7 +46,7 @@ app.post( '/inbound', function( req, res ) {
 			}
 		}
 	} else {
-		logger.error( ' Invalid incoming ip ' + JSON.stringify( req.body ) );
+		syslogger.error( ' Invalid incoming ip for sms ' + JSON.stringify( req.body ) );
 	}
 	res.sendStatus(200);
 } );
@@ -61,7 +62,7 @@ app.use(['/votectrl', '/control'], function (req, res, next) {
 			throw('ip does not match');
 		}
 	}).catch((err) => {
-		logger.error('Cannot validate admin ip -- ' + err);
+		syslogger.error('Cannot validate admin ip -- ' + err);
 		res.sendStatus( 401 );
 	})
 })
@@ -71,7 +72,7 @@ app.post( '/control', function( req, res ) {
 		draw.pollAudienceWinner();
 		let delayNotify = parseInt( req.body.delay );
 		currentMode = 'poll';
-		logger.info('Switched to poll mode')
+		syslogger.info('Switched to poll mode')
 		
 		if(req.body.notifyWinner === 'true') {
 			setTimeout( function() {
@@ -79,14 +80,14 @@ app.post( '/control', function( req, res ) {
 			}, delayNotify * 1000 );
 		}
 	} else {
-		logger.error( 'Invalid controller command' );
+		syslogger.error( 'Invalid controller command' );
 	}
 	res.sendStatus(200);
 });
 
 app.post( '/votectrl', function( req, res ) {
 	if( currentMode != 'vote' ) {
-		logger.info( 'Switched to vote mode' );
+		syslogger.info( 'Switched to vote mode' );
 	}
 	currentMode = 'vote';
 	switch(req.body.opcode){

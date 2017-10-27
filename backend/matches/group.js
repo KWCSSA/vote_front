@@ -1,5 +1,6 @@
 var db = require( '../db.js' );
 var logger = require('../logger.js').logger
+var syslogger = require('../logger.js').sysLogger
 var voters = require( '../voters.js' );
 var timer = require('../timer.js');
 
@@ -24,7 +25,7 @@ class groupMatch{
     constructor(){
         this.state = 'IDLE';
         this.initialized = false;
-        this.timer = new timer(60000, ()=>{this.state = 'RESULT'}, 1000);
+        this.timer = new timer(60000, ()=>{this.state = 'VOTED'}, 1000);
     }
 
     init(votePerUser, listOfCandidates){
@@ -33,18 +34,21 @@ class groupMatch{
             this.listOfCandidates = res.map((x) => new candidates(x['c_id'], x['c_name']))
             this.votePerUser = parseInt(votePerUser) || 3;
             this.initialized = true;
-        }).catch((err) => logger.error('Cannot initialize match ' + err))
+        }).catch((err) => syslogger.error('Cannot initialize match ' + err))
     }
 
     setState(newstate){
         if(!this.initialized){
-            logger.error('Match not initialized, set state failed');
+            syslogger.error('Match not initialized, set state failed');
         } else {
             this.state = newstate;
             if (newstate === 'VOTING'){
                 this.timer.start();
             } else {
                 this.timer.stop();
+            }
+            if (newstate === 'RESULT'){
+                this.writeResultToDb();
             }
         }
     }
@@ -71,7 +75,7 @@ class groupMatch{
         let candidateIds = this.listOfCandidates.map((y) => {return y.id});
         var arrayOfVotes = voteString.split(/[^0-9]+/).map(Number).filter((x)=> {return (x in candidateIds)});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
-if (filtered.length != 0){
+        if (filtered.length != 0){
             db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
                 for(var vote in filtered){
 			this.addVoteToCandidate(filtered[vote], 1);

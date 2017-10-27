@@ -1,4 +1,4 @@
-var logger = require( './logger.js' ).logger;
+var syslogger = require( './logger.js' ).sysLogger;
 var db = require( './db.js' );
 var voters = require( './voters.js' );
 var config = require( './config.js' );
@@ -11,14 +11,14 @@ class poller{
     pollAudienceWinner(roundId){
         voters.getAllVoters().then((res) => {
             if (res.length != 0){
-                logger.info( 'Selecting winner from ' + res.length + ' voters' )
+                syslogger.info( 'Selecting winner from ' + res.length + ' voters' )
                 var selection = Math.floor( Math.random() * res.length );
-                logger.info( 'Winner is ' + res[ selection ] );
+                syslogger.info( 'Winner is ' + res[ selection ] );
                 this.pollWinner = res[ selection ];
             } else {
-                logger.error( 'There are no voters');
+                syslogger.error( 'There are no voters');
             }
-        }).catch((err)=>{logger.error( 'Cannot get voters ' + err)});
+        }).catch((err)=>{syslogger.error( 'Cannot get voters ' + err)});
     }
 
     getPollWinner(){

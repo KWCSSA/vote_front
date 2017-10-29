@@ -25,7 +25,7 @@ class groupMatch{
     constructor(){
         this.state = 'IDLE';
         this.initialized = false;
-        this.timer = new timer(60000, ()=>{this.state = 'VOTED'}, 1000);
+        this.timer = new timer(90000, ()=>{this.state = 'VOTED'}, 1000);
     }
 
     init(votePerUser, listOfCandidates){
@@ -66,8 +66,8 @@ class groupMatch{
     }
 
     writeResultToDb(){
-        for(candidate in listOfCandidates){
-            db.runQuery('INSERT INTO smsvoting.group_result(vote, id) VALUES( ?, ? )', [candidate.vote, candidate.id])
+        for(var candidate in this.listOfCandidates){
+            db.runQuery('INSERT INTO smsvoting.group_result(votes, id) VALUES( ?, ? )', [listOfCandidates[candidate].vote, listOfCandidates[candidate].id])
         }
     }
 

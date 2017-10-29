@@ -1,4 +1,5 @@
 var IParser = require( './IParser' );
+var Message = require(' ./models/message.js').Message;
 var Nexmo = require( 'nexmo' );
 var logger = require( '../logger.js' ).smsLogger;
 
@@ -12,7 +13,7 @@ class NexmoParser extends IParser.IParser{
 	}
 
 	parseMessage(msg){
-		return new IParser.Message(msg.msisdn, msg.text, msg.messageId);
+		return new Message(msg.msisdn, msg.text, msg.messageId);
 	}
 
 	sendMessage(number,msg){

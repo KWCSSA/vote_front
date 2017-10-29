@@ -3,23 +3,7 @@ var logger = require('../logger.js').logger
 var syslogger = require('../logger.js').sysLogger
 var voters = require( '../voters.js' );
 var timer = require('../timer.js');
-
-class candidates{
-    constructor(id, name){
-        this.id = id;
-        this.name = name;
-        this.vote = 0;
-        this.score = 0;
-    }
-
-    addVote(count){
-        this.vote += count;
-    }
-
-    setVote(count){
-        this.vote = count;
-    }
-}
+var candidate = require('../models/candidate.js').baseCandidate;
 
 class groupMatch{
     constructor(){
@@ -31,7 +15,7 @@ class groupMatch{
     init(votePerUser, listOfCandidates){
         //did it this way to prevent escaping
         return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );').then((res) => {
-            this.listOfCandidates = res.map((x) => new candidates(x['c_id'], x['c_name']))
+            this.listOfCandidates = res.map((x) => new candidate(x['c_id'], x['c_name']))
             this.votePerUser = parseInt(votePerUser) || 3;
             this.initialized = true;
         }).catch((err) => syslogger.error('Cannot initialize match ' + err))

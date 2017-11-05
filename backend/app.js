@@ -37,12 +37,20 @@ app.post( '/inbound', function( req, res ) {
 		msg = parser.parseMessage( req.body );
 		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
 		if( voters.isRegistration( msg.message ) ) {
-			voters.addUser( msg.sender, msg.message );
+			voters.addUser( msg.sender, msg.message )
+			.then(() => parser.sendMessage( msg.sender, 'You have been registered into our system' ))
+			.catch((err) => {
+				logger.error( 'Error adding user ' + number + ' - ' + err );
+				parser.sendMessage( msg.sender, 'Sorry we could not register you into the system, please try again or contact the site staffs.' );
+			});
 		} else {
 			if (match.isVoting()) {
-				match.processVote( msg.message, msg.sender );
+				match.processVote( msg.message, msg.sender )
+				.then((res) => parser.sendMessage( msg.sender, 'You have voted on candidates ' + res ))
+				.catch(() => parser.sendMessage( msg.sender, 'Sorry we could not process the vote, please try again or contact the site staffs.' ));
 			} else {
 				logger.error(' User ' + msg.sender + ' attempted to vote while voting was closed.');
+				parser.sendMessage( msg.sender, 'Voting is not open right now' );
 			}
 		}
 	} else {
@@ -92,16 +100,16 @@ app.post( '/votectrl', function( req, res ) {
 	currentMode = 'vote';
 	switch(req.body.opcode){
 		case 'setcids':
-			match.init(req.body.votePerUser, req.body.cids);
-			break;
+		match.init(req.body.votePerUser, req.body.cids);
+		break;
 		case 'setstate':
-			match.setState(req.body.newState)
-			break;
+		match.setState(req.body.newState)
+		break;
 		case 'addvote':
-			req.body.reset ? match.setCandidateVote(req.body.candidate, parseInt(req.body.score)) : match.addVoteToCandidate(req.body.candidate, parseInt(req.body.score));
-			break;
+		req.body.reset ? match.setCandidateVote(req.body.candidate, parseInt(req.body.score)) : match.addVoteToCandidate(req.body.candidate, parseInt(req.body.score));
+		break;
 		default:
-			res.sendStatus(500);
+		res.sendStatus(500);
 	}
 	if (!res.headersSent) res.sendStatus(200);
 });

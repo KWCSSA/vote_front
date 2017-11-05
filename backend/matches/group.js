@@ -14,7 +14,7 @@ class groupCandidate extends candidate{
     addVote(count){
         this.vote += count;
     }
-
+    
     setVote(count){
         this.vote = count;
     }
@@ -26,7 +26,7 @@ class groupMatch{
         this.initialized = false;
         this.timer = new timer(90000, ()=>{this.state = 'VOTED'}, 1000);
     }
-
+    
     init(votePerUser, listOfCandidates){
         //did it this way to prevent escaping
         return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );').then((res) => {
@@ -35,7 +35,7 @@ class groupMatch{
             this.initialized = true;
         }).catch((err) => syslogger.error('Cannot initialize match ' + err))
     }
-
+    
     setState(newstate){
         if(!this.initialized){
             syslogger.error('Match not initialized, set state failed');
@@ -55,21 +55,21 @@ class groupMatch{
     compileResult(){
         return {mode: 'vote', state: this.state, timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
     }
-
+    
     addVoteToCandidate(id, votecount){
         this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).addVote(votecount);
     }
-
+    
     setCandidateVote(id, votecount){
         this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).setVote(votecount);
     }
-
+    
     writeResultToDb(){
         for(var candidate in this.listOfCandidates){
             db.runQuery('INSERT INTO smsvoting.group_result(votes, id) VALUES( ?, ? )', [listOfCandidates[candidate].vote, listOfCandidates[candidate].id])
         }
     }
-
+    
     processVote(voteString, user){
         let candidateIds = this.listOfCandidates.map((y) => {return y.id});
         var arrayOfVotes = voteString.split(/[^0-9]+/).map(Number).filter((x)=> {return (candidateIds.indexOf(x) !== -1)});
@@ -77,14 +77,20 @@ class groupMatch{
         if (filtered.length != 0){
             db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
                 for(var vote in filtered){
-			this.addVoteToCandidate(filtered[vote], 1);
+                    this.addVoteToCandidate(filtered[vote], 1);
                 }
-            }).then(()=>{
                 logger.info('User ' + user + ' has voted on ' + filtered);
-            }).catch((err) => {logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err )});
+                return filtered;
+            }).catch((err) => {
+                logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err );
+                return Promise.reject();
+            });
+        } else {
+            logger.error("Received empty vote from " + user);
+            return Promise.reject();
         }
     }
-
+    
     isVoting(){
         return (this.state === 'VOTING')
     }

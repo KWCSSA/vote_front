@@ -36,6 +36,7 @@ class groupMatch{
         }).catch((err) => syslogger.error('Cannot initialize match ' + err))
     }
     
+    
     setState(newstate){
         if(!this.initialized){
             syslogger.error('Match not initialized, set state failed');
@@ -53,7 +54,7 @@ class groupMatch{
     }
     
     compileResult(){
-        return {mode: 'vote', state: this.state, timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
+        return {state: this.state, timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
     }
     
     addVoteToCandidate(id, votecount){
@@ -70,6 +71,22 @@ class groupMatch{
         }
     }
     
+    processCommand(body){
+        switch(body.opcode){
+            case 'setcids':
+                this.init(body.votePerUser, body.cids);
+                break;
+            case 'setstate':
+                this.setState(body.newState)
+                break;
+            case 'addvote':
+                body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
+                break;
+            default:
+                throw 'Invalid Command'
+        }
+    }
+
     processVote(voteString, user){
         let candidateIds = this.listOfCandidates.map((y) => {return y.id});
         var arrayOfVotes = voteString.split(/[^0-9]+/).map(Number).filter((x)=> {return (candidateIds.indexOf(x) !== -1)});
@@ -93,6 +110,10 @@ class groupMatch{
     
     isVoting(){
         return (this.state === 'VOTING')
+    }
+
+    currentRound(){
+        return null;
     }
 }
 

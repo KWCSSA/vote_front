@@ -9,16 +9,16 @@ class poller{
     }
 
     pollAudienceWinner(roundId){
-        voters.getAllVoters().then((res) => {
+        voters.getAllVoters(roundId).then((res) => {
             if (res.length != 0){
                 syslogger.info( 'Selecting winner from ' + res.length + ' voters' )
                 var selection = Math.floor( Math.random() * res.length );
                 syslogger.info( 'Winner is ' + res[ selection ] );
                 this.pollWinner = res[ selection ];
             } else {
-                syslogger.error( 'There are no voters');
+                throw 'There are no registered voters';
             }
-        }).catch((err)=>{syslogger.error( 'Cannot get voters ' + err)});
+        });
     }
 
     getPollWinner(){

@@ -26,6 +26,11 @@ const nexmoIp = [new Netmask('174.37.245.32/29'), new Netmask('174.36.197.192/28
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
+app.use( function( req, res, next ) {
+	res.removeHeader( "x-powered-by" );
+	next();
+});
+
 app.post( '/inbound', function( req, res ) {
 	let valid = false;
 	nexmoIp.forEach((block) => {
@@ -67,7 +72,7 @@ app.use(['/votectrl', '/control'], function (req, res, next) {
 		if (res[0]['value'] === ip){
 			next();
 		} else {
-			throw('ip does not match');
+			throw ('ip does not match' + ip);
 		}
 	}).catch((err) => {
 		syslogger.error('Cannot validate admin ip -- ' + err);
@@ -77,16 +82,18 @@ app.use(['/votectrl', '/control'], function (req, res, next) {
 
 app.post( '/control', function( req, res ) {
 	if( req.body.opcode === 'poll' ) {
-		draw.pollAudienceWinner();
-		let delayNotify = parseInt( req.body.delay );
-		currentMode = 'poll';
-		syslogger.info('Switched to poll mode')
+		draw.pollAudienceWinner(match.currentRound()).then((winner) => {
+			let delayNotify = parseInt( req.body.delay );
+			currentMode = 'poll';
+			syslogger.info('Switched to poll mode')
+			
+			if(req.body.notifyWinner === 'true') {
+				setTimeout( function() {
+					parser.sendMessage( winner, 'Congratulations on winning a prize' );
+				}, delayNotify * 1000 );
+			}
+		}).catch((err) =>{syslogger.error( 'Cannot detemine a winner - ' + err)});
 		
-		if(req.body.notifyWinner === 'true') {
-			setTimeout( function() {
-				parser.sendMessage( draw.getPollWinner(), 'Congratulations on winning a prize' );
-			}, delayNotify * 1000 );
-		}
 	} else {
 		syslogger.error( 'Invalid controller command' );
 	}
@@ -98,26 +105,19 @@ app.post( '/votectrl', function( req, res ) {
 		syslogger.info( 'Switched to vote mode' );
 	}
 	currentMode = 'vote';
-	switch(req.body.opcode){
-		case 'setcids':
-		match.init(req.body.votePerUser, req.body.cids);
-		break;
-		case 'setstate':
-		match.setState(req.body.newState)
-		break;
-		case 'addvote':
-		req.body.reset ? match.setCandidateVote(req.body.candidate, parseInt(req.body.score)) : match.addVoteToCandidate(req.body.candidate, parseInt(req.body.score));
-		break;
-		default:
+	try{
+		match.processCommand(res.body);
+		res.sendStatus(200);
+	} catch (e){
+		syslogger.error(e + JSON.stringify(res.body));
 		res.sendStatus(500);
 	}
-	if (!res.headersSent) res.sendStatus(200);
 });
 
 app.get( '/result', function( req, res ) {
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	if( currentMode == 'vote' ) {
-		res.status(200).send( JSON.stringify(match.compileResult()));
+		res.status(200).send( JSON.stringify(Object.assign({ mode: 'vote' }, match.compileResult())));
 	} else if( currentMode == 'poll' ) {
 		var ret = { mode: 'poll', winner: draw.getPollWinner() };
 		res.status(200).send( JSON.stringify( ret ) );
@@ -128,11 +128,6 @@ app.get( '/result', function( req, res ) {
 
 app.get( '/', function( req, res ) {
 	res.sendStatus( 401 );
-} );
-
-app.use( function( req, res, next ) {
-	res.removeHeader( "x-powered-by" );
-	next();
 } );
 
 app.listen( 8080 );

@@ -83,7 +83,7 @@ app.use(['/votectrl', '/control'], function (req, res, next) {
 
 app.post( '/control', function( req, res ) {
 	if( req.body.opcode === 'poll' ) {
-		draw.pollAudienceWinner(match.currentRound()).then((winner) => {
+		draw.pollAudienceWinner().then((winner) => {
 			let delayNotify = parseInt( req.body.delay );
 			currentMode = 'poll';
 			syslogger.info('Switched to poll mode')

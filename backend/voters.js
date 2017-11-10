@@ -19,12 +19,8 @@ function addUser( number, code ) {
 		.then(db.runQuery( 'UPDATE reg_key SET used = 1 WHERE reg_key = ?', regKey))
 }
 
-function getAllVoters( votedInRound ) {
-	if ( typeof votedInRound == 'number' ){
-		return db.runQuery( 'SELECT DISTINCT voter FROM votes WHERE round = ' + votedInRound, []).then((result) => {return result.map(x => x['voter'])});
-	} else {
-		return db.runQuery( 'SELECT phone_number FROM voters', []).then((result) => {return result.map(x => x['phone_number'])});
-	}
+function getAllVoters() {
+	return db.runQuery( 'SELECT phone_number FROM voters', []).then((result) => {return result.map(x => x['phone_number'])});
 }
 
 module.exports.addUser = addUser;

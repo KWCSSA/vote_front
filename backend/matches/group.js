@@ -111,10 +111,6 @@ class groupMatch{
     isVoting(){
         return (this.state === 'VOTING')
     }
-
-    currentRound(){
-        return null;
-    }
 }
 
 module.exports.groupMatch = groupMatch;

@@ -8,8 +8,8 @@ class poller{
         this.pollWinner = '';
     }
 
-    pollAudienceWinner(roundId){
-        voters.getAllVoters(roundId).then((res) => {
+    pollAudienceWinner(){
+        voters.getAllVoters().then((res) => {
             if (res.length != 0){
                 syslogger.info( 'Selecting winner from ' + res.length + ' voters' )
                 var selection = Math.floor( Math.random() * res.length );

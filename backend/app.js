@@ -1,6 +1,6 @@
 require('dotenv').config()
 
-var GroupMatch = require('./matches/group.js').groupMatch;
+var matchProvider = require('./matches/matchProvider.js');
 var poller = require('./poller.js').poller
 var voters = require( './voters.js' );
 var config = require( './config.js' );
@@ -17,7 +17,8 @@ var app = express();
 //in the future consider factory, for the ease of switching between parser / match type
 
 var parser = new NexmoParser();
-var match = new GroupMatch();
+var match = matchProvider.getMatch('Group');
+var matchtype = 'Group';
 var draw = new poller();
 var currentMode = "poll";
 

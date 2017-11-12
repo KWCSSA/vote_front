@@ -54,7 +54,7 @@ class groupMatch{
     }
     
     compileResult(){
-        return {state: this.state, timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
+        return {state: this.state, type: 'Group', timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
     }
     
     addVoteToCandidate(id, votecount){

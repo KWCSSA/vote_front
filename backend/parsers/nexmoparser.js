@@ -1,5 +1,5 @@
 var IParser = require( './IParser' );
-var Message = require(' ./models/message.js').Message;
+var Message = require( '../models/message.js' ).Message;
 var Nexmo = require( 'nexmo' );
 var logger = require( '../logger.js' ).smsLogger;
 

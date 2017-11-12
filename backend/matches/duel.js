@@ -1,6 +1,4 @@
 var db = require( '../db.js' );
-var voters = require( '../voters.js' );
-var config = require( '../config.js' );
 var logger = require( '../logger.js' ).logger;
 var syslogger = require('../logger.js').sysLogger;
 var timer = require('../timer.js');
@@ -41,7 +39,8 @@ class duelMatch{
 	}
 
 	init(listOfCandidates){
-        return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );').then((res) =>
+		return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );')
+		.then((res) =>
 			db.runQuery('SELECT * FROM smsvoting.group_result where id in ( ' + listOfCandidates + ' );').then((res2) => {
 				if (this.round != 0)
 					this.writeResultToDb();
@@ -49,7 +48,8 @@ class duelMatch{
 				this.initialized = true;
 				this.roundNumber += 1;
 				syslogger.info('Match initialized, candidates - ' + listOfCandidates);
-			})).catch((err) => syslogger.error('Cannot initialize match ' + err))
+			}))
+		.catch((err) => syslogger.error('Cannot initialize match ' + err));
 	}
 
 	setState(newstate){
@@ -76,7 +76,7 @@ class duelMatch{
 		} else if(this.initialized){
 			switch(body.opcode){
 				case 'setstate':
-					this.setState(body.newState)
+					this.setState(body.newState);
 					break;
 				case 'addvote':
 					body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
@@ -93,16 +93,21 @@ class duelMatch{
 	
 	processVote(voteString, user){
 		let person = this.listOfCandidates.find((x) => {return (x.id === parseInt(voteString))});
-		if (typeof person === 'udnefined'){
-			logger.error("Received invalid vote to " + voteString + " from user " + user);
-		} else {
-			db.runQuery('INSERT INTO duel_votes(round, cid, voter) VALUES( ?, ?, ? )', [this.roundNumber, voteString, user ]).then(() => {
-				person.addVote(1);
-				logger.info('User ' + user + ' has voted on ' + voteString);
-            }).catch((err) => {
-                logger.error('Invalid vote to ' + voteString + ' from ' + user + ' - ' + err );
-            });
-		}
+		return new Promise((resolve, reject) => {
+			if (typeof person === 'udnefined'){
+				logger.error("Received invalid vote to " + voteString + " from user " + user);
+				return reject();
+			} else {
+				db.runQuery('INSERT INTO duel_votes(round, cid, voter) VALUES( ?, ?, ? )', [this.roundNumber, voteString, user ]).then(() => {
+					person.addVote(1);
+					logger.info('User ' + user + ' has voted on ' + voteString);
+					return resolve(voteString);
+				}).catch((err) => {
+					logger.error('Invalid vote to ' + voteString + ' from ' + user + ' - ' + err );
+					return reject();
+				});
+			}
+		});	
     }
 	
 	writeResultToDb(){
@@ -112,7 +117,7 @@ class duelMatch{
 	}
 
 	isVoting(){
-        return (this.state === 'VOTING')
+        return (this.state === 'VOTING');
 	}
 
 	addVoteToCandidate(id, votecount){

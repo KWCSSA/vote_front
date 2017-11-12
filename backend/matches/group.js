@@ -1,6 +1,6 @@
 var db = require( '../db.js' );
-var logger = require('../logger.js').logger
-var syslogger = require('../logger.js').sysLogger
+var logger = require('../logger.js').logger;
+var syslogger = require('../logger.js').sysLogger;
 var voters = require( '../voters.js' );
 var timer = require('../timer.js');
 var candidate = require('../models/candidate.js').baseCandidate;
@@ -30,26 +30,22 @@ class groupMatch{
     init(votePerUser, listOfCandidates){
         //did it this way to prevent escaping
         return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );').then((res) => {
-            this.listOfCandidates = res.map((x) => new groupCandidate(x['c_id'], x['c_name']))
+            this.listOfCandidates = res.map((x) => new groupCandidate(x['c_id'], x['c_name']));
             this.votePerUser = parseInt(votePerUser) || 3;
             this.initialized = true;
-        }).catch((err) => syslogger.error('Cannot initialize match ' + err))
+        }).catch((err) => syslogger.error('Cannot initialize match ' + err));
     }
     
     
     setState(newstate){
-        if(!this.initialized){
-            syslogger.error('Match not initialized, set state failed');
+        this.state = newstate;
+        if (newstate === 'VOTING'){
+            this.timer.start();
         } else {
-            this.state = newstate;
-            if (newstate === 'VOTING'){
-                this.timer.start();
-            } else {
-                this.timer.stop();
-            }
-            if (newstate === 'RESULT'){
-                this.writeResultToDb();
-            }
+            this.timer.stop();
+        }
+        if (newstate === 'RESULT'){
+            this.writeResultToDb();
         }
     }
     
@@ -67,49 +63,54 @@ class groupMatch{
     
     writeResultToDb(){
         for(var candidate in this.listOfCandidates){
-            db.runQuery('INSERT INTO smsvoting.group_result(votes, id) VALUES( ?, ? )', [listOfCandidates[candidate].vote, listOfCandidates[candidate].id])
+            db.runQuery('INSERT INTO smsvoting.group_result(votes, id) VALUES( ?, ? )', [listOfCandidates[candidate].vote, listOfCandidates[candidate].id]);
         }
     }
     
     processCommand(body){
-        switch(body.opcode){
-            case 'setcids':
-                this.init(body.votePerUser, body.cids);
-                break;
-            case 'setstate':
-                this.setState(body.newState)
-                break;
-            case 'addvote':
-                body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
-                break;
-            default:
-                throw 'Invalid Command'
-        }
+        if(body.opcode == 'setcids'){
+            this.init(body.votePerUser, body.cids);
+        } else if(this.initialized){
+            switch(body.opcode){
+                case 'setstate':
+                    this.setState(body.newState);
+                    break;
+                case 'addvote':
+                    body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
+                    break;
+				default:
+					syslogger.error('Invalid opcode' + body.opcode);
+			}
+		} else {
+			syslogger.error('Match not initialized yet');
+		} 
     }
 
     processVote(voteString, user){
         let candidateIds = this.listOfCandidates.map((y) => {return y.id});
         var arrayOfVotes = voteString.split(/[^0-9]+/).map(Number).filter((x)=> {return (candidateIds.indexOf(x) !== -1)});
         var filtered = arrayOfVotes.filter((value, index) => {return arrayOfVotes.indexOf(value) == index;}).slice(0,this.votePerUser);
-        if (filtered.length != 0){
-            db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
-                for(var vote in filtered){
-                    this.addVoteToCandidate(filtered[vote], 1);
-                }
-                logger.info('User ' + user + ' has voted on ' + filtered);
-                return filtered;
-            }).catch((err) => {
-                logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err );
-                return Promise.reject();
-            });
-        } else {
-            logger.error("Received empty vote from " + user);
-            return Promise.reject();
-        }
+        return new Promise((resolve, reject) => {
+            if (filtered.length != 0){
+                db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
+                    for(var vote in filtered){
+                        this.addVoteToCandidate(filtered[vote], 1);
+                    }
+                    logger.info('User ' + user + ' has voted on ' + filtered);
+                    return resolve(filtered);
+                }).catch((err) => {
+                    logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err );
+                    return reject();
+                });
+            } else {
+                logger.error("Received empty vote from " + user);
+                return reject();
+            }
+        });
     }
     
     isVoting(){
-        return (this.state === 'VOTING')
+        return (this.state === 'VOTING');
     }
 }
 

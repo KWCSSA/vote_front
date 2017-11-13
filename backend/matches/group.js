@@ -112,6 +112,10 @@ class groupMatch{
     isVoting(){
         return (this.state === 'VOTING');
     }
+
+    getMatchType(){
+        return 'Group';
+    }
 }
 
 module.exports.groupMatch = groupMatch;

@@ -18,7 +18,6 @@ var app = express();
 
 var parser = new NexmoParser();
 var match = matchProvider.getMatch('Group');
-var matchtype = 'Group';
 var draw = new poller();
 var currentMode = "poll";
 
@@ -106,6 +105,9 @@ app.post( '/votectrl', function( req, res ) {
 		syslogger.info( 'Switched to vote mode' );
 	}
 	currentMode = 'vote';
+	if (match.getMatchType() !== res.body.matchType){
+		match = matchProvider.getMatch(res.body.matchType);
+	}
 	try{
 		match.processCommand(res.body);
 		res.sendStatus(200);

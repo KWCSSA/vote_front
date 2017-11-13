@@ -134,7 +134,11 @@ class duelMatch{
 	
 	compileResult(){
         return {state: this.state, type: 'Duel', round: this.roundNumber, timerRemain: this.timer.getRemaining(), data: (this.state === 'IDLE') ? null : this.listOfCandidates};
-    }
+	}
+	
+	getMatchType(){
+		return 'Duel';
+	}
 }
 
 module.exports.duelMatch = duelMatch;

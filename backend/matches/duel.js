@@ -81,7 +81,7 @@ class duelMatch{
 				case 'addvote':
 					body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
 					break;
-				case 'addscore':
+				case 'setscore':
 					this.setCandidateScore(body.candidate, parseInt(body.score));
 				default:
 					syslogger.error('Invalid opcode' + body.opcode);

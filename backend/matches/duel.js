@@ -42,8 +42,6 @@ class duelMatch{
 		return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );')
 		.then((res) =>
 			db.runQuery('SELECT * FROM smsvoting.group_result where id in ( ' + listOfCandidates + ' );').then((res2) => {
-				if (this.round != 0)
-					this.writeResultToDb();
 				this.listOfCandidates = res.map((x) => new duelCandidate(x['c_id'], x['c_name'], res2.find((y) => y['id'] === x['c_id'])['votes']));
 				this.initialized = true;
 				syslogger.info('Match initialized, candidates - ' + listOfCandidates);

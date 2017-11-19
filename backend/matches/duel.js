@@ -46,7 +46,6 @@ class duelMatch{
 					this.writeResultToDb();
 				this.listOfCandidates = res.map((x) => new duelCandidate(x['c_id'], x['c_name'], res2.find((y) => y['id'] === x['c_id'])['votes']));
 				this.initialized = true;
-				this.roundNumber += 1;
 				syslogger.info('Match initialized, candidates - ' + listOfCandidates);
 			}))
 		.catch((err) => syslogger.error('Cannot initialize match ' + err));
@@ -64,15 +63,16 @@ class duelMatch{
 		}
 	}
 
-	next(){
-		db.runQuery('SELECT cids FROM smsvoting.duel_matches where round_id = ?', [this.roundNumber + 1]).then((res) => {
+	setRound(roundId){
+		db.runQuery('SELECT cids FROM smsvoting.duel_matches where round_id = ?', [roundId]).then((res) => {
 			this.init(res[0]['cids']);
+			this.roundNumber = roundId;
 		});
 	}
 
 	processCommand(body){
-		if (body.opcode == 'next'){
-			this.next();
+		if (body.opcode == 'setround'){
+			this.setRound(body.roundId);
 		} else if(this.initialized){
 			switch(body.opcode){
 				case 'setstate':

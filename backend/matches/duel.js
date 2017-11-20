@@ -39,12 +39,15 @@ class duelMatch{
 	}
 
 	init(listOfCandidates){
+		this.initialized = false;
 		return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );')
 		.then((res) =>
 			db.runQuery('SELECT * FROM smsvoting.group_result where id in ( ' + listOfCandidates + ' );').then((res2) => {
-				this.listOfCandidates = res.map((x) => new duelCandidate(x['c_id'], x['c_name'], res2.find((y) => y['id'] === x['c_id'])['votes']));
+				let firstRoundCandidate = res2.find((y) => y['id'] === x['c_id']);
+				let firstRoundVote = firstRoundCandidate ? firstRoundCandidate['votes'] : 0;
+				this.listOfCandidates = res.map((x) => new duelCandidate(x['c_id'], x['c_name'], firstRoundVote));
+				syslogger.info('Duel match initialized, candidates - ' + listOfCandidates);
 				this.initialized = true;
-				syslogger.info('Match initialized, candidates - ' + listOfCandidates);
 			}))
 		.catch((err) => syslogger.error('Cannot initialize match ' + err));
 	}

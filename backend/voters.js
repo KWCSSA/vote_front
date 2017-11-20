@@ -15,7 +15,7 @@ function isVote( text ) {
 
 function addUser( number, code ) {
 	var regKey = code.toUpperCase();
-	db.runQuery( 'INSERT INTO voters(phone_number, reg_key) VALUES( ?, ? )', [ number, regKey ])
+	return db.runQuery( 'INSERT INTO voters(phone_number, reg_key) VALUES( ?, ? )', [ number, regKey ])
 		.then(db.runQuery( 'UPDATE reg_key SET used = 1 WHERE reg_key = ?', regKey))
 }
 

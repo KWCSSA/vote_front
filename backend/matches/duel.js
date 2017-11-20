@@ -85,7 +85,7 @@ class duelMatch{
 				case 'setscore':
 					this.setCandidateScore(body.candidate, parseInt(body.score));
 				default:
-					syslogger.error('Invalid opcode' + body.opcode);
+					syslogger.error('Invalid opcode - ' + body.opcode);
 			}
 		} else {
 			syslogger.error('Match not initialized yet');

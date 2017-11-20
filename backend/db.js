@@ -13,7 +13,7 @@ function runQuery(query, values) {
 	return new Promise((resolve, reject) => {
 		pool.query(query, values, (err, results, fields) => {
 			if (err) {
-				logger.error('Cannot retrieve data from database' + err);
+				logger.error('Database error - ' + err);
 				return reject(err);
 			}
 			return resolve(results);

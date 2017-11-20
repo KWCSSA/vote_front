@@ -81,7 +81,7 @@ class groupMatch{
                     body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
                     break;
 				default:
-					syslogger.error('Invalid opcode' + body.opcode);
+					syslogger.error('Invalid opcode - ' + body.opcode);
 			}
 		} else {
 			syslogger.error('Match not initialized yet');

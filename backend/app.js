@@ -5,7 +5,6 @@ var poller = require('./poller.js').poller
 var voters = require( './voters.js' );
 var config = require( './config.js' );
 var logger = require( './logger.js' ).logger;
-var smslogger = require('./logger.js').Logger;
 var syslogger = require('./logger.js').sysLogger;
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
 var Netmask = require('netmask').Netmask
@@ -39,13 +38,13 @@ app.post( '/inbound', function( req, res ) {
 		}
 	})
 	if( valid ) {
-		msg = parser.parseMessage( req.body );
-		smslogger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
+		let msg = parser.parseMessage( req.body );
+		logger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
 		if( voters.isRegistration( msg.message ) ) {
 			voters.addUser( msg.sender, msg.message )
 			.then(() => parser.sendMessage( msg.sender, 'You have been registered into our system' ))
 			.catch((err) => {
-				logger.error( 'Error adding user ' + number + ' - ' + err );
+				logger.error( 'Error adding user ' + msg.sender + ' - ' + err );
 				parser.sendMessage( msg.sender, 'Sorry we could not register you into the system, please try again or contact the site staffs.' );
 			});
 		} else {
@@ -54,7 +53,7 @@ app.post( '/inbound', function( req, res ) {
 				.then((res) => parser.sendMessage( msg.sender, 'You have voted on candidates ' + res ))
 				.catch(() => parser.sendMessage( msg.sender, 'Sorry we could not process the vote, please try again or contact the site staffs.' ));
 			} else {
-				logger.error(' User ' + msg.sender + ' attempted to vote while voting was closed.');
+				logger.error('User ' + msg.sender + ' attempted to vote while voting was closed.');
 				parser.sendMessage( msg.sender, 'Voting is not open right now' );
 			}
 		}
@@ -67,7 +66,7 @@ app.post( '/inbound', function( req, res ) {
 app.use(['/votectrl', '/control'], function (req, res, next) {
 	let ip = req.ip.replace(/^.*:/, '');
 	res.set( 'Access-Control-Allow-Origin', '*' );
-	console.log( 'Incoming system control from ' + ip + ' content ' + JSON.stringify( req.body ) );
+	syslogger.info( 'Incoming system control from ' + ip + ' content ' + JSON.stringify( req.body ) );
 	config.getAttribute('admin_ip').then((res) => {
 		if (res[0]['value'] === ip){
 			next();
@@ -101,18 +100,16 @@ app.post( '/control', function( req, res ) {
 });
 
 app.post( '/votectrl', function( req, res ) {
-	if( currentMode != 'vote' ) {
-		syslogger.info( 'Switched to vote mode' );
-	}
 	currentMode = 'vote';
-	if (match.getMatchType() !== res.body.matchType){
-		match = matchProvider.getMatch(res.body.matchType);
-	}
 	try{
-		match.processCommand(res.body);
+		if (match.getMatchType() !== req.body.matchType)
+			match = matchProvider.getMatch(req.body.matchType);
+		if( currentMode != 'vote' ) 
+			syslogger.info( 'Switched to vote mode' );
+		match.processCommand(req.body);
 		res.sendStatus(200);
 	} catch (e){
-		syslogger.error(e + JSON.stringify(res.body));
+		syslogger.error(e + JSON.stringify(req.body));
 		res.sendStatus(500);
 	}
 });

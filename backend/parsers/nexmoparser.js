@@ -1,7 +1,7 @@
 var IParser = require( './IParser' );
 var Message = require( '../models/message.js' ).Message;
 var Nexmo = require( 'nexmo' );
-var logger = require( '../logger.js' ).Logger;
+var logger = require( '../logger.js' ).logger;
 
 class NexmoParser extends IParser.IParser{
 	constructor(){
@@ -20,7 +20,7 @@ class NexmoParser extends IParser.IParser{
 		this.nexmo_api.message.sendSms(process.env.nexmoVirtualNumber, number, msg, (err, apiResponse)=>{
 			//err is slightly broken, so we are implementing our own error handling
 			if (err || apiResponse == null || apiResponse.messages[0].status !== '0'){
-				logger.error('Cannot send SMS to ' + number + ' Content ' + msg );			
+				logger.error('Cannot send SMS to ' + number + ' - Content: ' + msg );			
 			} else {
 				logger.info('SMS sent to ' + number + ' MessageID: ' + apiResponse.messages[0]['message-id']);
 			}

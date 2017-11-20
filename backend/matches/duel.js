@@ -43,9 +43,11 @@ class duelMatch{
 		return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );')
 		.then((res) =>
 			db.runQuery('SELECT * FROM smsvoting.group_result where id in ( ' + listOfCandidates + ' );').then((res2) => {
-				let firstRoundCandidate = res2.find((y) => y['id'] === x['c_id']);
-				let firstRoundVote = firstRoundCandidate ? firstRoundCandidate['votes'] : 0;
-				this.listOfCandidates = res.map((x) => new duelCandidate(x['c_id'], x['c_name'], firstRoundVote));
+				this.listOfCandidates = res.map((x) => {
+					let firstRoundCandidate = res2.find((y) => y['id'] === x['c_id']);
+					let firstRoundVote = firstRoundCandidate ? firstRoundCandidate['votes'] : 0;
+					return new duelCandidate(x['c_id'], x['c_name'], firstRoundVote);
+				})
 				syslogger.info('Duel match initialized, candidates - ' + listOfCandidates);
 				this.initialized = true;
 			}))
@@ -84,6 +86,7 @@ class duelMatch{
 					break;
 				case 'setscore':
 					this.setCandidateScore(body.candidate, parseInt(body.score));
+					break;
 				default:
 					syslogger.error('Invalid opcode - ' + body.opcode);
 			}

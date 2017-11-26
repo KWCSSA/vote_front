@@ -13,7 +13,7 @@ class TwilioParser extends IParser.IParser{
 	}
 
 	parseMessage(msg){
-		return new Message(msg.from, msg.body, msg.sid);
+		return new Message(msg.From, msg.Body, msg.Sid);
 	}
 
 	sendMessage(number,msg){
@@ -27,7 +27,7 @@ class TwilioParser extends IParser.IParser{
 	}
 
 	checkMessage(msg){ 
-		return ((typeof msg.from !== "undefined") && (msg.to === twilioNumber) && (typeof msg.sid !== "undefined") && (typeof msg.body !== "undefined"));
+		return ((typeof msg.From !== "undefined") && (msg.To === twilioNumber) && (typeof msg.MessageSid !== "undefined") && (typeof msg.Body !== "undefined"));
 	}
 }
 

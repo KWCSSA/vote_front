@@ -1,43 +1,37 @@
 var IParser = require( './IParser' );
+var Message = require( '../models/message.js' ).Message;
+var logger = require( '../logger.js' ).logger;
 
-var accountSID = 'AC369976eaa7875c32914103dd8918486d';
-var accountToken = 'd0abc96a7dec45736725c43561fc8628';
-var inboundNumber = '12267804517';
+const accountSid = process.env.twilioAccountSid;
+const authToken = process.env.twilioAuthToken;
+const twilioNumber = process.env.twilioVirtualNumber;
 
-
-
-function TwilioParser() {
-	
-	this.checkMessage = function( msg ) {
-		if( typeof msg.AccountSid == "undefined" ) {
-			return false;
-		}
-		
-		if( msg.AccountSid == accountSID && 
-			typeof msg.Body === "string" &&
-			typeof msg.From === "string" ) {
-			return true;
-		}
-		
-		return false;
+class TwilioParser extends IParser.IParser{
+	constructor(){
+		super();
+		this.client = require('twilio')(accountSid, authToken);
 	}
-	
-	
-	this.parseMessage = function( msg ) {
-		var d = new Date();
-		var ts = Math.round( d.getTime() / 1000 );
-		var ret = {
-			Sender: msg.From,
-			Message: msg.Body,
-			Timestamp: ts,
-			SendTime: d.toTimeString(),
-			MessageID: msg.SmsMessageSid
-		};
+
+	parseMessage(msg){
+		return new Message(msg.from, msg.body, msg.sid);
 	}
-	
+
+	sendMessage(number,msg){
+		this.client.messages.create({
+			to: number,
+			from: twilioNumber,
+			body: msg
+		})
+		.then((message) => logger.info('SMS sent to ' + number + ' MessageID: ' + message.sid))
+		.catch((err) => logger.error('Cannot send SMS to ' + number + ' - Content: ' + msg));
+	}
+
+	checkMessage(msg){ 
+		return ((typeof msg.from !== "undefined") && (msg.to === twilioNumber) && (typeof msg.sid !== "undefined") && (typeof msg.body !== "undefined"));
+	}
 }
 
-module.exports = TwilioParser;
+module.exports.TwilioParser = TwilioParser;
 
 // {
 // 	"AccountSid":"ACb4c0db00d68a2fd3ed2887d7f2c8fb6c",

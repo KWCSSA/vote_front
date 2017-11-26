@@ -30,7 +30,7 @@ class NexmoParser extends IParser.IParser{
 		});
 	}
 
-	validateMessage(msg){
+	validateMessage(req){
 		let valid = false;
 		nexmoIp.forEach((block) => {
 			if (block.contains(req.ip.replace(/^.*:/, ''))) {

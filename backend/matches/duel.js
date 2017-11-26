@@ -35,7 +35,7 @@ class duelMatch{
 		this.state = 'IDLE';
 		this.initialized = false;
 		this.roundNumber = 0;
-        this.timer = new timer(120000, ()=>{this.state = 'VOTED'}, 1000);
+        this.timer = new timer(300000, ()=>{this.state = 'VOTED'}, 1000);
 	}
 
 	init(listOfCandidates){

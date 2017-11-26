@@ -24,7 +24,7 @@ class groupMatch{
     constructor(){
         this.state = 'IDLE';
         this.initialized = false;
-        this.timer = new timer(90000, ()=>{this.state = 'VOTED'}, 1000);
+        this.timer = new timer(120000, ()=>{this.state = 'VOTED'}, 1000);
     }
     
     init(votePerUser, listOfCandidates){

@@ -29,6 +29,10 @@ class TwilioParser extends IParser.IParser{
 	validateMessage(req){
 		return require('twilio').validateExpressRequest(req, authToken);
 	}
+
+	finish(res){
+		res.send();
+	}
 }
 
 module.exports.TwilioParser = TwilioParser;

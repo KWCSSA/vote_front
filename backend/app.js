@@ -52,7 +52,7 @@ app.post( '/inbound', function( req, res ) {
 	} else {
 		syslogger.error( ' Invalid incoming ip for sms ' + JSON.stringify( req.body ) );
 	}
-	res.sendStatus(200);
+	parser.finish(res);
 } );
 
 app.use(['/votectrl', '/control'], function (req, res, next) {

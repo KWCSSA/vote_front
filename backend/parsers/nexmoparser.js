@@ -39,6 +39,10 @@ class NexmoParser extends IParser.IParser{
 		});
 		return valid;
 	}
+
+	finish(res){
+		res.sendStatus(200);
+	}
 }
 
 module.exports.NexmoParser = NexmoParser;

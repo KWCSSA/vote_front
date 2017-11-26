@@ -26,8 +26,8 @@ class TwilioParser extends IParser.IParser{
 		.catch((err) => logger.error('Cannot send SMS to ' + number + ' - Content: ' + msg));
 	}
 
-	checkMessage(msg){ 
-		return ((typeof msg.From !== "undefined") && (msg.To === twilioNumber) && (typeof msg.MessageSid !== "undefined") && (typeof msg.Body !== "undefined"));
+	validateMessage(req){
+		return require('twilio').validateExpressRequest(req, authToken);
 	}
 }
 

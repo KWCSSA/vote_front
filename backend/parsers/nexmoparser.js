@@ -2,6 +2,9 @@ var IParser = require( './IParser' );
 var Message = require( '../models/message.js' ).Message;
 var Nexmo = require( 'nexmo' );
 var logger = require( '../logger.js' ).logger;
+var Netmask = require('netmask').Netmask;
+
+const nexmoIp = [new Netmask('174.37.245.32/29'), new Netmask('174.36.197.192/28'), new Netmask('173.193.199.16/28'), new Netmask('119.81.44.0/28')];
 
 class NexmoParser extends IParser.IParser{
 	constructor(){
@@ -27,8 +30,14 @@ class NexmoParser extends IParser.IParser{
 		});
 	}
 
-	checkMessage(msg){ 
-		return ((typeof msg.msisdn !== "undefined") && (msg.to === process.env.nexmoVirtualNumber) && (typeof msg.messageId !== "undefined") && (typeof msg.text !== "undefined"));
+	validateMessage(msg){
+		let valid = false;
+		nexmoIp.forEach((block) => {
+			if (block.contains(req.ip.replace(/^.*:/, ''))) {
+				valid = true;
+			}
+		});
+		return valid;
 	}
 }
 

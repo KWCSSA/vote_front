@@ -8,7 +8,6 @@ var logger = require( './logger.js' ).logger;
 var syslogger = require('./logger.js').sysLogger;
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
 var TwilioParser = require('./parsers/twilioparser.js').TwilioParser;
-var Netmask = require('netmask').Netmask
 
 var express = require( 'express' );
 var bodyParser = require('body-parser')
@@ -21,8 +20,6 @@ var match = matchProvider.getMatch('Group');
 var draw = new poller();
 var currentMode = "poll";
 
-const nexmoIp = [new Netmask('174.37.245.32/29'), new Netmask('174.36.197.192/28'), new Netmask('173.193.199.16/28'), new Netmask('119.81.44.0/28')];
-
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
@@ -32,13 +29,7 @@ app.use( function( req, res, next ) {
 });
 
 app.post( '/inbound', function( req, res ) {
-	let valid = false;
-	nexmoIp.forEach((block) => {
-		if (block.contains(req.ip.replace(/^.*:/, ''))) {
-			valid = true;
-		}
-	})
-	if( valid ) {
+	if( parser.validateMessage(req) ) {
 		let msg = parser.parseMessage( req.body );
 		logger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
 		if( voters.isRegistration( msg.message ) ) {

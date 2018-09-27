@@ -2,6 +2,7 @@ var mysql = require('mysql');
 var logger = require('./logger.js').logger;
 require('dotenv').config()
 
+/* Pool of mysql connections*/
 var pool = mysql.createPool({
 	host: process.env.dbHost,
 	user: process.env.dbUser,
@@ -9,6 +10,12 @@ var pool = mysql.createPool({
 	database: process.env.dbName
 });
 
+/**
+ * Execute a query
+ * @param {string} query - The query to run
+ * @param {string[]} values - The values to replace ? with
+ * @return {Promise} The remaining time.
+ */
 function runQuery(query, values) {
 	return new Promise((resolve, reject) => {
 		pool.query(query, values, (err, results, fields) => {
@@ -21,6 +28,10 @@ function runQuery(query, values) {
 	});
 }
 
+/**
+ * Close all connections
+ * @return {Promise} Promise with result of closing connections.
+ */
 function closeDB() {
 	return new Promise((resolve, reject) => {
 		pool.end(function (err) {

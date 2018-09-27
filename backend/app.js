@@ -15,6 +15,7 @@ var app = express();
 
 //in the future consider factory, for the ease of switching between parser / match type
 
+//Some initialization
 var parser = new TwilioParser();
 var match = matchProvider.getMatch('Group');
 var draw = new poller();
@@ -28,10 +29,13 @@ app.use( function( req, res, next ) {
 	next();
 });
 
+//inbound route for sms provider
 app.post( '/inbound', function( req, res ) {
 	if( parser.validateMessage(req) ) {
+		//parse and log the message
 		let msg = parser.parseMessage( req.body );
 		logger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
+		//first check if it is for registration purpose
 		if( voters.isRegistration( msg.message ) ) {
 			voters.addUser( msg.sender, msg.message )
 			.then(() => parser.sendMessage( msg.sender, 'You have been registered into our system' ))
@@ -40,6 +44,7 @@ app.post( '/inbound', function( req, res ) {
 				parser.sendMessage( msg.sender, 'Sorry we could not register you into the system, please try again or contact the site staffs.' );
 			});
 		} else {
+			//pass the message to match class to process
 			if (match.isVoting()) {
 				match.processVote( msg.message, msg.sender )
 				.then((res) => parser.sendMessage( msg.sender, 'You have voted on candidates ' + res ))
@@ -50,11 +55,13 @@ app.post( '/inbound', function( req, res ) {
 			}
 		}
 	} else {
-		syslogger.error( ' Invalid incoming ip for sms ' + JSON.stringify( req.body ) );
+		syslogger.error( ' Invalid request origin ' + JSON.stringify( req.body ) );
 	}
 	parser.finish(res);
 } );
 
+//Check if control signal comes from the same ip as in db.
+//Not very secure, but security throuhg obscurity is better than nothing
 app.use(['/votectrl', '/control'], function (req, res, next) {
 	let ip = req.ip.replace(/^.*:/, '');
 	res.set( 'Access-Control-Allow-Origin', '*' );
@@ -71,13 +78,15 @@ app.use(['/votectrl', '/control'], function (req, res, next) {
 	})
 })
 
+//Route for chaning mode
 app.post( '/control', function( req, res ) {
 	if( req.body.opcode === 'poll' ) {
+		//draw a random audience
 		draw.pollAudienceWinner().then((winner) => {
 			let delayNotify = parseInt( req.body.delay );
 			currentMode = 'poll';
 			syslogger.info('Switched to poll mode')
-			
+			//send a message alerting the winner
 			if(req.body.notifyWinner === 'true') {
 				setTimeout( function() {
 					parser.sendMessage( winner, 'Congratulations on winning a prize' );
@@ -91,13 +100,16 @@ app.post( '/control', function( req, res ) {
 	res.sendStatus(200);
 });
 
+//route for chaning various controls related to the match
 app.post( '/votectrl', function( req, res ) {
 	currentMode = 'vote';
 	try{
+		//if match type doesn't match, change match type
 		if (match.getMatchType() !== req.body.matchType)
 			match = matchProvider.getMatch(req.body.matchType);
 		if( currentMode != 'vote' ) 
 			syslogger.info( 'Switched to vote mode' );
+		//forward the command to the match class
 		match.processCommand(req.body);
 		res.sendStatus(200);
 	} catch (e){
@@ -106,6 +118,7 @@ app.post( '/votectrl', function( req, res ) {
 	}
 });
 
+//route to get result of current votes / draw winner
 app.get( '/result', function( req, res ) {
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	if( currentMode == 'vote' ) {

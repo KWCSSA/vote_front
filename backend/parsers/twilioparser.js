@@ -6,16 +6,30 @@ const accountSid = process.env.twilioAccountSid;
 const authToken = process.env.twilioAuthToken;
 const twilioNumber = process.env.twilioVirtualNumber;
 
+/**
+ * Parser for Twilio
+ * @extends IParser
+ */
 class TwilioParser extends IParser.IParser{
 	constructor(){
 		super();
 		this.client = require('twilio')(accountSid, authToken);
 	}
 
+	/**
+     * Parses a Twilio message into a Message
+     * @param {Object} msg - The Twilio message received.
+     * @return {Message} the output message.
+	 */
 	parseMessage(msg){
 		return new Message(msg.From, msg.Body, msg.Sid);
 	}
 
+	/**
+     * Sends a sms to a number
+     * @param {string} number - The number to send the message to
+	 * @param {string} msg - The message to send to the user
+	 */
 	sendMessage(number,msg){
 		this.client.messages.create({
 			to: number,
@@ -26,10 +40,18 @@ class TwilioParser extends IParser.IParser{
 		.catch((err) => logger.error('Cannot send SMS to ' + number + ' - Content: ' + msg));
 	}
 
+	/**
+     * Verify that the request is valid Twilio request
+	 * @param {Object} req - the incoming request
+	 * @return {boolean} the result
+	 */
 	validateMessage(req){
 		return require('twilio').validateExpressRequest(req, authToken);
 	}
 
+	/**
+     * Close the incoming request
+	 */
 	finish(res){
 		res.send();
 	}

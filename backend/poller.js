@@ -3,11 +3,19 @@ var db = require( './db.js' );
 var voters = require( './voters.js' );
 var config = require( './config.js' );
 
+/** Poller Class: Used to draw prize from the audiences */
 class poller{
+    /**
+     * Create a poller.
+     */
     constructor(){
         this.pollWinner = '';
     }
 
+    /**
+     * Randomly find a winner and store it
+     * @return {Promise} interval - Promise with a winning number.
+     */
     pollAudienceWinner(){
         return voters.getAllVoters().then((res) => {
             if (res.length != 0){
@@ -22,6 +30,10 @@ class poller{
         });
     }
 
+    /**
+     * Return the last winner
+     * @return {String} The last winnner.
+     */
     getPollWinner(){
         return this.pollWinner;
     }

@@ -4,6 +4,10 @@ var syslogger = require('../logger.js').sysLogger;
 var timer = require('../timer.js');
 var candidate = require('../models/candidate.js').baseCandidate;
 
+/**
+ * Candidate for duel matches
+ * @extends candidate
+ */
 class duelCandidate extends candidate{
     constructor(id, name, firstRoundVote){
         super(id, name);
@@ -11,19 +15,35 @@ class duelCandidate extends candidate{
 		this.score = 0;
 		this.firstRoundVote = firstRoundVote;
     }
-    
+	
+	/**
+     * Add vote to the candidate
+     * @param {number} count - The amount to add
+	 */
     addVote(count){
         this.vote += count;
     }
-    
+	
+	/**
+     * Set vote amount for the candidate
+     * @param {number} count - The amount to set to
+	 */
     setVote(count){
         this.vote = count;
 	}
 	
+	/**
+     * Set scpre for the candidate
+     * @param {number} count - The amount to set to
+	 */
 	setScore(count){
 		this.score = count;
 	}
 
+	/**
+     * Get the weighted total score of a candidate
+     * @return {number} the weighted score
+	 */
 	getTotal(){
 		//temp function, might have to change in the future
 		return this.vote * 0.45 + this.score * 0.45 + this.firstRoundVote * 0.1;
@@ -38,6 +58,11 @@ class duelMatch{
         this.timer = new timer(300000, ()=>{this.state = 'VOTED'}, 1000);
 	}
 
+	/**
+     * Initialize the match
+     * @param {string} listOfCandidates - List of candidates the voter can choose from
+     * @return {Promise} Promise that initialize the match
+	 */
 	init(listOfCandidates){
 		this.initialized = false;
 		return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );')
@@ -54,6 +79,10 @@ class duelMatch{
 		.catch((err) => syslogger.error('Cannot initialize match ' + err));
 	}
 
+	/**
+     * Update the state
+     * @param {string} newstate - The state to update to
+	 */
 	setState(newstate){
 		this.state = newstate;
         if (newstate === 'VOTING'){
@@ -66,6 +95,10 @@ class duelMatch{
 		}
 	}
 
+	/**
+     * Update the match to be in the next round
+     * @param {number} roundId - The round number to update to
+	 */
 	setRound(roundId){
 		db.runQuery('SELECT cids FROM smsvoting.duel_matches where round_id = ?', [roundId]).then((res) => {
 			this.init(res[0]['cids']);
@@ -73,6 +106,10 @@ class duelMatch{
 		});
 	}
 
+	/**
+     * Process an incoming command
+     * @param {Object} body - The command body
+	 */
 	processCommand(body){
 		if (body.opcode == 'setround'){
 			this.setRound(body.roundId);
@@ -95,6 +132,12 @@ class duelMatch{
 		}
 	}
 	
+	/**
+     * Process a voter's vote
+     * @param {Object} voteString - The string user sent
+     * @param {Object} user - The incoming number
+     * @returns {Promise} Promise with the result of the vote
+	 */
 	processVote(voteString, user){
 		let person = this.listOfCandidates.find((x) => {return (x.id === parseInt(voteString))});
 		return new Promise((resolve, reject) => {
@@ -112,34 +155,64 @@ class duelMatch{
 				});
 			}
 		});	
-    }
+	}
 	
+	/**
+     * Write current match result to database
+	 */
 	writeResultToDb(){
 		for(var candidate in this.listOfCandidates){
             db.runQuery('INSERT INTO smsvoting.duel_result(c_id, round_id, score, votes) VALUES( ?, ?, ?, ? )', [this.listOfCandidates[candidate].id, this.roundNumber, this.listOfCandidates[candidate].score, this.listOfCandidates[candidate].vote]);
         }
 	}
 
+	/**
+     * See if currently accepting votes
+     * @returns {boolean} the result of the check
+	 */
 	isVoting(){
         return (this.state === 'VOTING');
 	}
 
+	/**
+     * Add vote to a candidate
+     * @param {number} id - The candidate id
+     * @param {number} votecount - Amount of votes
+	 */
 	addVoteToCandidate(id, votecount){
         this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).addVote(votecount);
-    }
-    
+	}
+	
+    /**
+     * Set vote count of a candidate
+     * @param {number} id - The candidate id
+     * @param {number} votecount - Amount of votes
+	 */
     setCandidateVote(id, votecount){
         this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).setVote(votecount);
 	}
 	
+	/**
+     * Set score of a candidate
+     * @param {number} id - The candidate id
+     * @param {number} scorecount - Score count
+	 */
 	setCandidateScore(id, scorecount){
 		this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).setScore(scorecount);		
 	}
 	
+	/**
+     * Return the result
+     * @return {Object} Object containing the information about the match
+	 */
 	compileResult(){
         return {state: this.state, type: 'Duel', round: this.roundNumber, timerRemain: this.timer.getRemaining(), data: (this.state === 'IDLE') ? null : this.listOfCandidates};
 	}
 	
+	/**
+     * Get current match type
+     * @returns {string} the match type
+	 */
 	getMatchType(){
 		return 'Duel';
 	}

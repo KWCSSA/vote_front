@@ -7,6 +7,7 @@ if (!fs.existsSync(logDir)){
 	fs.mkdirSync(logDir);
 }
 
+/*Winston logger that logs system information*/
 var sysLogger = new(winston.Logger)({
 	level: 'info',
 	transports: [
@@ -16,6 +17,7 @@ var sysLogger = new(winston.Logger)({
 	]
 });
 
+/*Winston logger that logs sms information*/
 var logger = new(winston.Logger)({
 	transports: [
 		new winston.transports.File({ name: 'error', filename: `./${logDir}/smsError.log`, level: 'error' }),

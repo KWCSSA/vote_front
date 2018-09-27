@@ -6,6 +6,10 @@ var Netmask = require('netmask').Netmask;
 
 const nexmoIp = [new Netmask('174.37.245.32/29'), new Netmask('174.36.197.192/28'), new Netmask('173.193.199.16/28'), new Netmask('119.81.44.0/28')];
 
+/**
+ * Parser for Nexmo
+ * @extends IParser
+ */
 class NexmoParser extends IParser.IParser{
 	constructor(){
 		super();
@@ -15,10 +19,20 @@ class NexmoParser extends IParser.IParser{
 		});
 	}
 
+	/**
+     * Parses a Nexmo message into a Message
+     * @param {Object} msg - The Nexmo message received.
+     * @return {Message} the output message.
+	 */
 	parseMessage(msg){
 		return new Message(msg.msisdn, msg.text, msg.messageId);
 	}
 
+	/**
+     * Sends a sms to a number
+     * @param {string} number - The number to send the message to
+	 * @param {string} msg - The message to send to the user
+	 */
 	sendMessage(number,msg){
 		this.nexmo_api.message.sendSms(process.env.nexmoVirtualNumber, number, msg, (err, apiResponse)=>{
 			//err is slightly broken, so we are implementing our own error handling
@@ -30,6 +44,11 @@ class NexmoParser extends IParser.IParser{
 		});
 	}
 
+	/**
+     * Verify that the request comes from Nexmo server
+	 * @param {Object} req - the incoming request
+	 * @return {boolean} the result
+	 */
 	validateMessage(req){
 		let valid = false;
 		nexmoIp.forEach((block) => {
@@ -40,6 +59,9 @@ class NexmoParser extends IParser.IParser{
 		return valid;
 	}
 
+	/**
+     * Close the incoming request
+	 */
 	finish(res){
 		res.sendStatus(200);
 	}

@@ -4,7 +4,7 @@ var DuelMatch = require('./duel.js').duelMatch;
 /**
  * Create a match with given type.
  * @param {string} type - The match type
- * @return {Object} the created match 
+ * @return {Object} the created match
  */
 function getMatch(type){
     switch(type){
@@ -12,6 +12,8 @@ function getMatch(type){
             return new GroupMatch();
         case 'Duel':
             return new DuelMatch();
+        case 'NewGroup':
+            return new newGroupMatch();
         default:
             throw 'Cannot get match';
     }

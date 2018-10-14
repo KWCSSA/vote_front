@@ -191,6 +191,58 @@
 			sendControlCommand( cmd );
 		}
 
+		function addScoreNG() {
+			var score = document.forms["addScoreFormNG"]["scorebox"].value;
+			var reset = document.forms["addScoreFormNG"]["resetbox"].checked;
+			var candidate = document.forms["addScoreFormNG"]["candidatebox"].value;
+
+			if( parseInt( score ).toString() !== score ) {
+				alert( 'Invalid score' );
+				return;
+			}
+
+			var cmd = { opcode: 'addvote',
+			score: score,
+			matchType: 'NewGroup',
+			candidate: candidate };
+
+			if( reset ) {
+				cmd.reset = 'true';
+			}
+
+			sendVoteCommand( cmd );
+
+		}
+
+		function changeGroup(groupNum) {
+			var cmd = { 
+				opcode: 'changeGroup',
+				groupNum: groupNum,
+				matchType: 'NewGroup'
+			}
+
+			sendVoteCommand( cmd );
+		}
+
+		function changeCandidate(candIndex) {
+			var cmd = { 
+				opcode: 'changeCandidate',
+				candidateIndex: candIndex,
+				matchType: 'NewGroup'
+			}
+
+			sendVoteCommand( cmd );
+		}
+
+		function initNewGroupMatch() {
+			var cmd = {
+				opcode: 'initMatch',
+				matchType: 'NewGroup'
+			}
+
+			sendVoteCommand( cmd );
+		}
+
 
 	</script>
 	<h1 style="margin-top: 30px; padding-left: 10%;">Control Panel</h1>
@@ -201,6 +253,7 @@
 			<li class="active"><a href="#Duel" data-toggle="tab">Duel</a></li>
 			<!--<li><a href="#SingleVote" data-toggle="tab">Single Vote</a></li>-->
 			<li><a href="#GroupVote" data-toggle="tab">Group Vote</a></li>
+            <li> <a href="#NewGroupMatch" data-toggle="tab"> New Group </a></li>
 			<li><a href="#PollAudience" data-toggle="tab">Poll Audience</a></li>
 		</ul>
 
@@ -539,7 +592,95 @@
 
 				</div>
 			</div>
+            
+        <!-- Added -->
+            <div class="tab-pane fade" id="NewGroupMatch">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <ul class="nav nav-tabs">
+				            <li class="active"><a href="#ngv-init" data-toggle="tab">Initialize</a></li>
+							<li><a href="#ngv-voting" data-toggle="tab">Voting</a></li>
+							<li><a href="#ngv-result" data-toggle="tab">Result</a></li>
+				        </ul>
+                        <div class="tab-content" style="height: 100%; padding-top: 10px;">
+                            <div class="tab-pane fade in active" id="ngv-init">
+                                <button name="initialize" type="button" onclick="initNewGroupMatch();" value="INITIALIZE">Initialize</button>
+							</div>
+                            <div class="tab-pane fade in" id="ngv-voting">
+                                <div class="col-md-12" style="margin: 5px;">
+                                    
+                                        <span>Switch to Group</span>
+                                        <button name="groupOne" type="button" onclick="changeGroup('1');" value="1">Group 1</button>
+                                        <button name="groupTwo" type="button" onclick="changeGroup('2');" value="2">Group 2</button>
+                                        <button name="groupThree" type="button" onclick="changeGroup('3');" value="3">Group 3</button>
+                                        <button name="groupFour" type="button" onclick="changeGroup('4');" value="4">Group 4</button>
+                                    
+                                </div>
+                                
+                                <div class="col-md-12" style="margin: 5px;">
+                                
+                                    <span>Switch to Candidate</span>
+                                    <button name="candOne" type="button" onclick="changeCandidate(0);" value="1">#1</button>
+                                    <button name="candSecond" type="button" onclick="changeCandidate(1);" value="2">#2</button>
+                                    <button name="candThree" type="button" onclick="changeCandidate(2);" value="3">#3</button>
+                                    <button name="candFour" type="button" onclick="changeCandidate(3);" value="4">#4</button>
+                                    <button name="candFive" type="button" onclick="changeCandidate(4);" value="5">#5</button>
+                                    <button name="candSix" type="button" onclick="changeCandidate(5);" value="6">#6</button>
+                                
+                                </div>
+                                <div class="row" style="margin: 5px;">
+                                    <div class="col-md-5">
+                                        <button class="btn-success" name="startVote" type="button" onclick="switchToState('VOTING', 'NewGroup');" value="STARTVOTE">Start Voting</button>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <button class="btn-danger" name="endVote" type="button" onclick="switchToState('VOTED', 'NewGroup');" value="ENDVOTE">End Voting</button>
+                                    </div>
+                                
+                                </div>
+                                <div class="container">
+                                    <div class="row" style="margin: 5px;">
+                                        <form name="addScoreFormNG" onsubmit="addScoreNG();">
+                                            <table>
+                                                <tr>
+                                                    <td>Candidate:</td>
+                                                    <td><input type="text" name="candidatebox"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Add Score:</td>
+                                                    <td><input type="text" name="scorebox"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Reset</td>
+                                                    <td><input type="checkbox" name="resetbox"></td>
+                                                </tr>
+                                            </table>
+                                        </form>
+                                        <br />
+								        <button id="cmdAddScore" name="addScore" type="button" value="addScore" onclick="addScoreNG();">Add Score</button>
+                                    </div>
+                                </div>
+                                <br/>
+                                
+                                
+                            </div>
+							<div class="tab-pane fade in" id="ngv-result">
+								<button name="result" type="button" onclick="switchToState('RESULT', 'NewGroup');" value="RESULT">Result</button>
+							</div>
+                        </div>
+                    
+                    </div>
+                
+                
+                
+                
+                </div>
+            
+            
+            </div>
 
+            <!-- Added -->
+            
+            
 			<div class="tab-pane fade" id="PollAudience">
 				<div class="panel panel-default">
 					<div class="panel-body">
@@ -576,9 +717,7 @@
 
 	</div>
 
-
-
-	<div class="panel panel-default" style="width: 700px; margin: auto;">
+	<div class="panel panel-default" style="width: 1000px; margin: auto;">
 		<div class="panel-heading">Result</div>
 		<div id="resultBar" class="panel-body"></div>
 	</div>

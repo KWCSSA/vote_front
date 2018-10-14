@@ -1,7 +1,7 @@
-var db = require( '../db.js' );
+var db = require('../db.js');
 var logger = require('../logger.js').logger;
 var syslogger = require('../logger.js').sysLogger;
-var voters = require( '../voters.js' );
+var voters = require('../voters.js');
 var timer = require('../timer.js');
 var candidate = require('../models/candidate.js').baseCandidate;
 
@@ -9,9 +9,10 @@ var candidate = require('../models/candidate.js').baseCandidate;
 * Candidate for group stage
 * @extends candidate
 */
-class groupCandidate extends candidate{
-  constructor(id){
-    super(id, 'lalala');
+class groupCandidate extends candidate {
+  constructor(id, name, groupNum) {
+    super(id, name);
+    this.group = groupNum;
     this.vote = 0;
   }
 
@@ -19,7 +20,7 @@ class groupCandidate extends candidate{
   * Add vote to the candidate
   * @param {number} count - The amount to add
   */
-  addVote(count){
+  addVote(count) {
     this.vote += count;
   }
 
@@ -27,20 +28,25 @@ class groupCandidate extends candidate{
   * Set vote amount for the candidate
   * @param {number} count - The amount to set to
   */
-  setVote(count){
+  setVote(count) {
     this.vote = count;
   }
 }
 
-class NewGroupMatch{
-  constructor(){
+class NewGroupMatch {
+  constructor() {
     this.state = 'IDLE';
     this.initialized = false;
-    this.groupsOfCandidates = {};
-    this.currentGroup = {};
+    this.groupsOfCandidates = {
+      '1': [],
+      '2': [],
+      '3': [],
+      '4': []
+    };
+    this.currentGroup = null;
     this.currentCandidate = null;
     this.listOfCandidates = [];
-    this.timer = new timer(300000, ()=>{this.state = 'VOTED'}, 1000);
+    this.timer = new timer(300000, () => { this.state = 'VOTED' }, 1000);
   }
 
   /**
@@ -49,19 +55,31 @@ class NewGroupMatch{
   * @param {string} listOfCandidates - List of candidates the voter can choose from
   * @return {Promise} Promise that initialize the match
   */
-  init(){
+  init() {
+    this.state = 'IDLE';
     this.initialized = false;
-    //did it this way to prevent escaping
-    return db.runQuery('SELECT * FROM newGroupCandidates').then((res) => {
+    this.groupsOfCandidates = {
+      '1': [],
+      '2': [],
+      '3': [],
+      '4': []
+    };
+    this.currentGroup = null;
+    this.currentCandidate = null;
+    this.listOfCandidates = [];
+    return db.runQuery('SELECT * FROM new_candidates').then((res) => {
       res.map(row => {
         let groupNum = row['groupNum'];
-        let candidates = row['ids'].split(',').replace(/ /g,'');
-        let compiledCandidates = [];
-        candidates.map(id => {compiledCandidates.push(new groupCandidate(id))});
-        this.groupsOfCandidates.groupNum = compiledCandidates;
-        this.listOfCandidates.concat(compiledCandidates);
-      }
-      syslogger.info('NewGroup match initialized, candidates - ' + listOfCandidates);
+        let candidateId = parseInt(row['cid']);
+        let candidateName = row['name'];
+        this.groupsOfCandidates[groupNum].push(candidateId);
+        this.listOfCandidates.push(new groupCandidate(candidateId, candidateName, groupNum));
+      });
+      syslogger.info('NewGroup match initialized');
+      syslogger.info(`GroupOne: ${this.groupsOfCandidates['1']}`);
+      syslogger.info(`GroupTwo: ${this.groupsOfCandidates['2']}`);
+      syslogger.info(`GroupThree: ${this.groupsOfCandidates['3']}`);
+      syslogger.info(`GroupFour: ${this.groupsOfCandidates['4']}`);
       this.initialized = true;
     }).catch((err) => syslogger.error('Cannot initialize match ' + err));
   }
@@ -70,14 +88,22 @@ class NewGroupMatch{
   * Update the state
   * @param {string} newstate - The state to update to
   */
-  setState(newstate){
+  setState(newstate) {
     this.state = newstate;
-    if (newstate === 'VOTING'){
-      this.timer.start();
-    } else (newstate === 'VOTED'){
+    if (newstate === 'VOTING') {
+      if (!this.currentGroup) {
+        syslogger.error('Did not choose current group');
+        this.setState('IDLE');
+      } else if (!this.currentCandidate) {
+        syslogger.error(`Did not choose current candidate from group: ${this.currentGroup.groupNum}`);
+        this.setState('IDLE');
+      } else {
+        this.timer.start();
+      }
+    } else {
       this.timer.stop();
     }
-    if (newstate === 'RESULT'){
+    if (newstate === 'RESULT') {
       this.writeResultToDb();
     }
   }
@@ -86,27 +112,30 @@ class NewGroupMatch{
   * Return the result
   * @return {Object} Object containing the information about the match
   */
-  compileResult(){
+  compileResult() {
     return {
       state: this.state,
       type: 'NewGroup',
       timerRemain: this.timer.getRemaining(),
-      currentGroup: this.currentGroup.groupNum,
-      currentCandidate: this.currentCandidate.id,
-      data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates
+      currentGroup: this.currentGroup? this.currentGroup.groupNum : null,
+      currentCandidateId: this.currentCandidate? this.currentCandidate.id : null,
+      currentCandidateName: this.currentCandidate? this.currentCandidate.name : null,
+      data: this.listOfCandidates
     };
   }
 
   changeToGroup(groupNum) {
-    this.currentCandidateIndex = -1;
+    syslogger.info(`Changing to group: ${groupNum}`);
     this.currentGroup = {
       groupNum: groupNum,
-      groupCandidates: this.groupsOfCandidates[groupNum]
+      candidates: this.groupsOfCandidates[groupNum]
     }
+    this.currentCandidate = null;
   }
 
   changeToCandidate(index) {
-    this.currentCandidate = this.currentGroup.groupCandidates[index];
+    syslogger.info(`Changing to candidate: #${index + 1} in group: ${this.currentGroup.groupNum}`);
+    this.currentCandidate = this.listOfCandidates.find(e=> e.id === this.currentGroup.candidates[index]);
   }
 
   /**
@@ -114,8 +143,8 @@ class NewGroupMatch{
   * @param {number} id - The candidate id
   * @param {number} votecount - Amount of votes
   */
-  addVoteToCandidate(id, votecount){
-    this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).addVote(votecount);
+  addVoteToCandidate(id, votecount) {
+    this.listOfCandidates.find((x) => { return (x.id === parseInt(id)) }).addVote(votecount);
   }
 
   /**
@@ -123,16 +152,16 @@ class NewGroupMatch{
   * @param {number} id - The candidate id
   * @param {number} votecount - Amount of votes
   */
-  setCandidateVote(id, votecount){
-    this.listOfCandidates.find((x) => {return (x.id === parseInt(id))}).setVote(votecount);
+  setCandidateVote(id, votecount) {
+    this.listOfCandidates.find((x) => { return (x.id === parseInt(id)) }).setVote(votecount);
   }
 
   /**
   * Write current match result to database
   */
-  writeResultToDb(){
-    for(let candidate in this.currentGroup.groupCandidates){
-      db.runQuery('INSERT INTO group_result(votes, id) VALUES( ?, ? )', [this.currentGroup.groupCandidates[candidate].vote, this.currentGroup.groupCandidates[candidate].id]);
+  writeResultToDb() {
+    for(var candidate in this.listOfCandidates){
+      db.runQuery('INSERT INTO newgroup_result(votes, id) VALUES( ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id]);
     }
   }
 
@@ -140,19 +169,40 @@ class NewGroupMatch{
   * Process an incoming command
   * @param {Object} body - The command body
   */
-  processCommand(body){
-    if(body.opcode == 'initMatch'){
+  processCommand(body) {
+    if (body.opcode == 'initMatch') {
       //initialize the match
       this.init();
-    } else if(this.initialized){
-      switch(body.opcode){
+    } else if (this.initialized) {
+      switch (body.opcode) {
         //change match state
         case 'setstate':
           this.setState(body.newState);
           break;
+        case 'changeGroup':
+          if (this.isVoting()) {
+            syslogger.error('Voting in progress');
+          } else {
+            this.changeToGroup(body.groupNum);
+          }
+          break;
+        case 'changeCandidate':
+          if (!this.currentGroup) {
+            syslogger.error('Did not choose current group');
+          } else if (this.isVoting()) {
+            syslogger.error('Voting in progress');
+          } else {
+            this.changeToCandidate(Number(body.candidateIndex));
+          }
+          break;
         //add or set vote for a candidate
         case 'addvote':
-          body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
+          let targetCid = parseInt(body.candidate);
+          if (targetCid && targetCid > 0 && targetCid < 25) {
+            body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
+          } else {
+            syslogger.error(`Invalid candidate ${body.candidate} for addScore`);
+          }
           break;
         default:
           syslogger.error('Invalid opcode - ' + body.opcode);
@@ -168,33 +218,32 @@ class NewGroupMatch{
   * @param {Object} user - The incoming number
   * @returns {Promise} Promise with the result of the vote
   */
-  processVote(voteString, user){
-    return db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ this.currentCandidate.id, user ]).then(() => {
-      this.currentCandidate.addVote(1);
+  processVote(voteString, user) {
+    return db.runQuery('INSERT INTO newgroup_votes(groupNum, cid, voter) VALUES( ?, ?, ? )', [this.currentGroup.groupNum, this.currentCandidate.id, user]).then(() => {
+      this.addVoteToCandidate(this.currentCandidate.id, 1);
       logger.info('User ' + user + ' has voted on ' + this.currentCandidate.id);
       return this.currentCandidate.id;
     }).catch((err) => {
-      logger.error('Invalid vote to ' + this.currentCandidate.id + ' from ' + user + ' - ' + err );
-      throw new Error('Invalid vote to ' + this.currentCandidate.id + ' from ' + user + ' - ' + err );
+      logger.error('Invalid vote to ' + this.currentCandidate.id + ' from ' + user + ' - ' + err);
+      throw new Error('Invalid vote to ' + this.currentCandidate.id + ' from ' + user + ' - ' + err);
     });
-  });
+  }
+
+  /**
+  * See if currently accepting votes
+  * @returns {boolean} the result of the check
+  */
+  isVoting() {
+    return (this.state === 'VOTING');
+  }
+
+  /**
+  * Get current match type
+  * @returns {string} the match type
+  */
+  getMatchType() {
+    return 'NewGroup';
+  }
 }
 
-/**
-* See if currently accepting votes
-* @returns {boolean} the result of the check
-*/
-isVoting(){
-  return (this.state === 'VOTING');
-}
-
-/**
-* Get current match type
-* @returns {string} the match type
-*/
-getMatchType(){
-  return 'NewGroup';
-}
-}
-
-module.exports.groupMatch = groupMatch;
+module.exports.newGroupMatch = NewGroupMatch;

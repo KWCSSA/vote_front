@@ -48,7 +48,7 @@ app.post( '/inbound', function( req, res ) {
 			if (match.isVoting()) {
 				match.processVote( msg.message, msg.sender )
 				.then((res) => parser.sendMessage( msg.sender, 'You have voted on candidates ' + res ))
-				.catch(() => parser.sendMessage( msg.sender, 'Sorry we could not process the vote, please try again or contact the site staffs.' ));
+				.catch((err) => parser.sendMessage( msg.sender, 'Sorry we could not process the vote, please try again or contact the site staffs.' ));
 			} else {
 				logger.error('User ' + msg.sender + ' attempted to vote while voting was closed.');
 				parser.sendMessage( msg.sender, 'Voting is not open right now' );
@@ -135,4 +135,6 @@ app.get( '/', function( req, res ) {
 	res.sendStatus( 401 );
 } );
 
-app.listen( 8080 );
+app.listen(8080, () => {
+	console.log('Listening on Port 8080');
+});

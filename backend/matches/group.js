@@ -123,7 +123,12 @@ class groupMatch{
                     break;
                 //add or set vote for a candidate
                 case 'addvote':
-                    body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
+                    let targetCid = parseInt(body.candidate);
+                    if (targetCid && targetCid > 0 && targetCid < 25) {
+                        body.reset ? this.setCandidateVote(body.candidate, parseInt(body.score)) : this.addVoteToCandidate(body.candidate, parseInt(body.score));
+                    } else {
+                        syslogger.error(`Invalid candidate ${body.candidate} for addScore`);
+                    }
                     break;
 				default:
 					syslogger.error('Invalid opcode - ' + body.opcode);

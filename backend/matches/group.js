@@ -48,8 +48,8 @@ class groupMatch{
     init(votePerUser, listOfCandidates){
         this.initialized = false;
         //did it this way to prevent escaping
-        return db.runQuery('SELECT * FROM smsvoting.candidates where c_id in ( ' + listOfCandidates + ' );').then((res) => {
-            this.listOfCandidates = res.map((x) => new groupCandidate(x['c_id'], x['c_name']));
+        return db.runQuery('SELECT * FROM new_candidates where cid in ( ' + listOfCandidates + ' );').then((res) => {
+            this.listOfCandidates = res.map((x) => new groupCandidate(x['cid'], x['name']));
             this.votePerUser = parseInt(votePerUser) || 3;
             syslogger.info('Group match initialized, candidates - ' + listOfCandidates);
             this.initialized = true;
@@ -103,7 +103,7 @@ class groupMatch{
 	 */
     writeResultToDb(){
         for(var candidate in this.listOfCandidates){
-            db.runQuery('INSERT INTO smsvoting.group_result(votes, id) VALUES( ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id]);
+            db.runQuery('INSERT INTO group_result(votes, id) VALUES( ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id]);
         }
     }
     

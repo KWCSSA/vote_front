@@ -8,6 +8,7 @@ var logger = require( './logger.js' ).logger;
 var syslogger = require('./logger.js').sysLogger;
 var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
 var TwilioParser = require('./parsers/twilioparser.js').TwilioParser;
+var db = require('./db.js');
 
 var express = require( 'express' );
 var bodyParser = require('body-parser')
@@ -62,7 +63,7 @@ app.post( '/inbound', function( req, res ) {
 
 //Check if control signal comes from the same ip as in db.
 //Not very secure, but security throuhg obscurity is better than nothing
-app.use(['/votectrl', '/control'], function (req, res, next) {
+app.use(['/votectrl', '/control', '/register'], function (req, res, next) {
 	let ip = req.ip.replace(/^.*:/, '');
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	syslogger.info( 'Incoming system control from ' + ip + ' content ' + JSON.stringify( req.body ) );
@@ -76,6 +77,26 @@ app.use(['/votectrl', '/control'], function (req, res, next) {
 		syslogger.error('Cannot validate admin ip -- ' + err);
 		res.sendStatus( 401 );
 	})
+});
+
+app.post('/register', function(req, res) {
+	let isValid = /^\d+$/.test(req.body.number) && req.body.number.length === 10;
+	if (isValid) {
+		db.runQuery('INSERT INTO voters(phone_number) VALUES(?)', [`+1${req.body.number}`]).then(() => {
+			res.writeHead(200, { 'Content-Type': 'application/json' }); 
+      		res.end(JSON.stringify({success: true}));
+		}).catch((err) => {
+			syslogger.error('Cannot register phone number (Database Error): ' + req.body.number);
+			res.writeHead(200, { 'Content-Type': 'application/json' }); 
+      		res.end(JSON.stringify({success: false, error: 'Cannot register phone number (Database Error)'}));
+		});
+	} else {
+		syslogger.error('Cannot register phone number (Invalid Number): ' + req.body.number);
+		res.writeHead(200, { 'Content-Type': 'application/json' }); 
+      	res.end(JSON.stringify({success: false, error: 'Cannot register phone number (Invalid Number)'}));
+	}
+	
+	
 })
 
 //Route for chaning mode

@@ -136,6 +136,7 @@ class NewGroupMatch {
   changeToCandidate(index) {
     syslogger.info(`Changing to candidate: #${index + 1} in group: ${this.currentGroup.groupNum}`);
     this.currentCandidate = this.listOfCandidates.find(e=> e.id === this.currentGroup.candidates[index]);
+    this.setState('SINGLE');
   }
 
   /**
@@ -161,7 +162,8 @@ class NewGroupMatch {
   */
   writeResultToDb() {
     for(var candidate in this.listOfCandidates){
-      db.runQuery('INSERT INTO newgroup_result(votes, id) VALUES( ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id]);
+      if(this.listOfCandidates[candidate].group == this.currentGroup.groupNum)
+        db.runQuery('INSERT INTO newgroup_result(votes, id) VALUES( ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id]);
     }
   }
 

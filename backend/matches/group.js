@@ -77,7 +77,7 @@ class groupMatch{
      * @return {Object} Object containing the information about the match
 	 */
     compileResult(){
-        return {state: this.state, type: 'Group', timerRemain: this.timer.getRemaining(), data: ((this.state === 'IDLE') || (this.state === 'SINGLE')) ? null : this.listOfCandidates};
+        return {state: this.state, type: 'Group', timerRemain: this.timer.getRemaining(), data: (this.state === 'IDLE') ? null : this.listOfCandidates};
     }
     
     /**

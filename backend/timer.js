@@ -31,8 +31,7 @@ class timer{
      * Start the timer
      */
     start(){
-        this.stop();
-        this.timeRemain = this.totalTime;
+        this.reset();
         this.intervalFunction = setInterval(this.tick.bind(this), this.interval);
     }
 
@@ -52,6 +51,11 @@ class timer{
      */
     stop() {
         clearInterval(this.intervalFunction);
+    }
+
+    reset(){
+        this.stop();
+        this.timeRemain = this.totalTime;
     }
     
 }

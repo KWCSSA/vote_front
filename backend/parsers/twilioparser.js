@@ -53,7 +53,8 @@ class TwilioParser extends IParser.IParser{
      * Close the incoming request
 	 */
 	finish(res){
-		res.send();
+		res.writeHead(200, { 'Content-Type': 'text/xml' });
+		res.send('<Response></Response>');
 	}
 }
 

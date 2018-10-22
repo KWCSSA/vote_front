@@ -7,17 +7,17 @@ var NewGroupMatch = require('./newGroup.js').newGroupMatch;
  * @param {string} type - The match type
  * @return {Object} the created match
  */
-function getMatch(type){
-    switch(type){
-        case 'Group':
-            return new GroupMatch();
-        case 'Duel':
-            return new DuelMatch();
-        case 'NewGroup':
-            return new NewGroupMatch();
-        default:
-            throw 'Cannot get match';
-    }
+function getMatch(type, socket) {
+  switch (type) {
+    case 'Group':
+      return new GroupMatch(socket);
+    case 'Duel':
+      return new DuelMatch(socket);
+    case 'NewGroup':
+      return new NewGroupMatch(socket);
+    default:
+      throw 'Cannot get match';
+  }
 }
 
 module.exports.getMatch = getMatch;

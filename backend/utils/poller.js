@@ -1,7 +1,7 @@
 var syslogger = require( './logger.js' ).sysLogger;
-var db = require( './db.js' );
+var db = require( '../dbs/db.js' );
 var voters = require( './voters.js' );
-var config = require( './config.js' );
+var config = require( '../configs/config.js' );
 
 /** Poller Class: Used to draw prize from the audiences */
 class poller{

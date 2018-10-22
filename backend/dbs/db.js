@@ -1,5 +1,5 @@
 var mysql = require('mysql');
-var logger = require('./logger.js').logger;
+var logger = require('../utils/logger.js').logger;
 require('dotenv').config()
 
 /* Pool of mysql connections*/

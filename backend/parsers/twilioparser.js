@@ -1,6 +1,6 @@
 var IParser = require( './IParser' );
 var Message = require( '../models/message.js' ).Message;
-var logger = require( '../logger.js' ).logger;
+var logger = require( '../utils/logger.js' ).logger;
 
 const accountSid = process.env.twilioAccountSid;
 const authToken = process.env.twilioAuthToken;

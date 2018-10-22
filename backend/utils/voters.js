@@ -1,4 +1,4 @@
-var db = require( './db.js' );
+var db = require( '../dbs/db.js' );
 var logger = require( './logger.js' ).logger;
 
 var codePattern = new RegExp( '^[a-zA-Z]{8}$', '' );

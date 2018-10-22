@@ -1,8 +1,8 @@
-var db = require('../db.js');
-var logger = require('../logger.js').logger;
-var syslogger = require('../logger.js').sysLogger;
-var voters = require('../voters.js');
-var timer = require('../timer.js');
+var db = require('../dbs/db.js');
+var logger = require('../utils/logger.js').logger;
+var syslogger = require('../utils/logger.js').sysLogger;
+var voters = require('../utils/voters.js');
+var timer = require('../utils/timer.js');
 var candidate = require('../models/candidate.js').baseCandidate;
 
 /**
@@ -34,7 +34,7 @@ class groupCandidate extends candidate {
 }
 
 class NewGroupMatch {
-  constructor() {
+  constructor(socket) {
     this.state = 'IDLE';
     this.initialized = false;
     this.groupsOfCandidates = {
@@ -46,7 +46,8 @@ class NewGroupMatch {
     this.currentGroup = null;
     this.currentCandidate = null;
     this.listOfCandidates = [];
-    this.timer = new timer(300000, () => { this.state = 'VOTED' }, 1000);
+    this.timer = new timer(180000, () => { this.state = 'VOTED' }, 1000, this.compileResult.bind(this));
+    this.socket = socket;
   }
 
   /**
@@ -81,6 +82,7 @@ class NewGroupMatch {
       syslogger.info(`GroupThree: ${this.groupsOfCandidates['3']}`);
       syslogger.info(`GroupFour: ${this.groupsOfCandidates['4']}`);
       this.initialized = true;
+      this.compileResult();
     }).catch((err) => syslogger.error('Cannot initialize match ' + err));
   }
 
@@ -113,7 +115,7 @@ class NewGroupMatch {
   * @return {Object} Object containing the information about the match
   */
   compileResult() {
-    return {
+    let result = {
       state: this.state,
       type: 'NewGroup',
       timerRemain: this.timer.getRemaining(),
@@ -122,6 +124,8 @@ class NewGroupMatch {
       currentCandidateName: this.currentCandidate? this.currentCandidate.name : null,
       data: this.listOfCandidates
     };
+    this.socket.emit('resultUpdate', result);
+    return result;
   }
 
   changeToGroup(groupNum) {
@@ -212,6 +216,7 @@ class NewGroupMatch {
     } else {
       syslogger.error('Match not initialized yet');
     }
+    this.compileResult();
   }
 
   /**
@@ -224,6 +229,7 @@ class NewGroupMatch {
     return db.runQuery('INSERT INTO newgroup_votes(groupNum, cid, voter) VALUES( ?, ?, ? )', [this.currentGroup.groupNum, this.currentCandidate.id, user]).then(() => {
       this.addVoteToCandidate(this.currentCandidate.id, 1);
       logger.info('User ' + user + ' has voted on ' + this.currentCandidate.id);
+      this.compileResult();
       return this.currentCandidate.id;
     }).catch((err) => {
       logger.error('Invalid vote to ' + this.currentCandidate.id + ' from ' + user + ' - ' + err);

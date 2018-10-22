@@ -1,4 +1,4 @@
-var db = require('./db.js');
+var db = require('../dbs/db.js');
 
 /**
  * Fetch attribute value from database

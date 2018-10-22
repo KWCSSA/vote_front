@@ -1,17 +1,20 @@
 require('dotenv').config()
 
-var matchProvider = require('./matches/matchProvider.js');
-var poller = require('./poller.js').poller
-var voters = require( './voters.js' );
-var config = require( './config.js' );
-var logger = require( './logger.js' ).logger;
-var syslogger = require('./logger.js').sysLogger;
-var NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
-var TwilioParser = require('./parsers/twilioparser.js').TwilioParser;
-var db = require('./db.js');
+const matchProvider = require('./matches/matchProvider.js');
+const poller = require('./poller.js').poller
+const voters = require( './voters.js' );
+const config = require( './config.js' );
+const logger = require( './logger.js' ).logger;
+const syslogger = require('./logger.js').sysLogger;
+const NexmoParser = require( './parsers/nexmoparser.js' ).NexmoParser;
+const TwilioParser = require('./parsers/twilioparser.js').TwilioParser;
+const db = require('./db.js');
 
-var express = require( 'express' );
-var bodyParser = require('body-parser')
+const express = require( 'express' );
+const bodyParser = require('body-parser');
+const hbs = require('hbs');
+const path = require('path');
+
 var app = express();
 
 //in the future consider factory, for the ease of switching between parser / match type
@@ -22,13 +25,13 @@ var match = matchProvider.getMatch('Group');
 var draw = new poller();
 var currentMode = "poll";
 
+app.use(express.static(path.join(__dirname, '/public')));
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 
-app.use( function( req, res, next ) {
-	res.removeHeader( "x-powered-by" );
-	next();
-});
+app.set('view engine', 'hbs');
+
+app.disable('x-powered-by');
 
 //inbound route for sms provider
 app.post( '/inbound', function( req, res ) {

@@ -37,14 +37,14 @@ app.post( '/inbound', function( req, res ) {
 		let msg = parser.parseMessage( req.body );
 		logger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
 		//first check if it is for registration purpose
-		if( voters.isRegistration( msg.message ) ) {
-			voters.addUser( msg.sender, msg.message )
-			.then(() => parser.sendMessage( msg.sender, 'You have been registered into our system' ))
-			.catch((err) => {
-				logger.error( 'Error adding user ' + msg.sender + ' - ' + err );
-				parser.sendMessage( msg.sender, 'Sorry we could not register you into the system, please try again or contact the site staffs.' );
-			});
-		} else {
+		//if( voters.isRegistration( msg.message ) ) {
+			//voters.addUser( msg.sender, msg.message )
+			//.then(() => parser.sendMessage( msg.sender, 'You have been registered into our system' ))
+			//.catch((err) => {
+				//logger.error( 'Error adding user ' + msg.sender + ' - ' + err );
+				//parser.sendMessage( msg.sender, 'Sorry we could not register you into the system, please try again or contact the site staffs.' );
+			//});
+		//} else {
 			//pass the message to match class to process
 			if (match.isVoting()) {
 				match.processVote( msg.message, msg.sender )
@@ -54,7 +54,7 @@ app.post( '/inbound', function( req, res ) {
 				logger.error('User ' + msg.sender + ' attempted to vote while voting was closed.');
 				parser.sendMessage( msg.sender, 'Voting is not open right now' );
 			}
-		}
+		//}
 	} else {
 		syslogger.error( ' Invalid request origin ' + JSON.stringify( req.body ) );
 	}
@@ -83,7 +83,8 @@ app.post('/register', function(req, res) {
 	let isValid = /^\d+$/.test(req.body.number) && req.body.number.length === 10;
 	if (isValid) {
 		db.runQuery('INSERT INTO voters(phone_number) VALUES(?)', [`+1${req.body.number}`]).then(() => {
-			res.writeHead(200, { 'Content-Type': 'application/json' }); 
+		parser.sendMessage( '+1'+req.body.number, 'You have been registered into our system' );	
+		res.writeHead(200, { 'Content-Type': 'application/json' }); 
       		res.end(JSON.stringify({success: true}));
 		}).catch((err) => {
 			syslogger.error('Cannot register phone number (Database Error): ' + req.body.number);

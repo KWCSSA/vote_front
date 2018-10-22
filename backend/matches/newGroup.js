@@ -46,7 +46,7 @@ class NewGroupMatch {
     this.currentGroup = null;
     this.currentCandidate = null;
     this.listOfCandidates = [];
-    this.timer = new timer(300000, () => { this.state = 'VOTED' }, 1000);
+    this.timer = new timer(180000, () => { this.state = 'VOTED' }, 1000);
   }
 
   /**

@@ -1,5 +1,5 @@
 init.sql
-*.log
+log/
 .env
 node_modules/
 ignore/

@@ -37,7 +37,7 @@ class TwilioParser extends IParser.IParser{
 			body: msg
 		})
 		.then((message) => logger.info('SMS sent to ' + number + ' MessageID: ' + message.sid))
-		.catch((err) => logger.error('Cannot send SMS to ' + number + ' - Content: ' + msg));
+		.catch((err) => logger.error('Cannot send SMS to ' + number + ' - Content: ' + msg + ' -Error: ' + err));
 	}
 
 	/**
@@ -53,7 +53,8 @@ class TwilioParser extends IParser.IParser{
      * Close the incoming request
 	 */
 	finish(res){
-		res.writeHead(200, { 'Content-Type': 'text/xml' });
+		res.set('Content-Type', 'text/xml');
+		res.status(200);
 		res.send('<Response></Response>');
 	}
 }

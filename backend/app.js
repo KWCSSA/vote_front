@@ -43,24 +43,14 @@ app.post( '/inbound', function( req, res ) {
 		//parse and log the message
 		let msg = parser.parseMessage( req.body );
 		logger.info('MSG ID ' + msg.messageId + ' RECEIVED ON ' + msg.messageTime + ' FROM ' + msg.sender + ' DATA ' + msg.message +':\n');
-		//first check if it is for registration purpose
-		if( voters.isRegistration( msg.message ) ) {
-			voters.addUser( msg.sender, msg.message )
-			.then(() => parser.sendMessage( msg.sender, 'You have been registered into our system' ))
-			.catch((err) => {
-				logger.error( 'Error adding user ' + msg.sender + ' - ' + err );
-				parser.sendMessage( msg.sender, 'Sorry we could not register you into the system, please try again or contact the site staffs.' );
-			});
+		//pass the message to match class to process
+		if (match.isVoting()) {
+			match.processVote( msg.message, msg.sender )
+			.then((res) => parser.sendMessage( msg.sender, 'You have voted on candidates ' + res ))
+			.catch((err) => parser.sendMessage( msg.sender, 'Sorry we could not process the vote, please try again or contact the site staffs.' ));
 		} else {
-			//pass the message to match class to process
-			if (match.isVoting()) {
-				match.processVote( msg.message, msg.sender )
-				.then((res) => parser.sendMessage( msg.sender, 'You have voted on candidates ' + res ))
-				.catch((err) => parser.sendMessage( msg.sender, 'Sorry we could not process the vote, please try again or contact the site staffs.' ));
-			} else {
-				logger.error('User ' + msg.sender + ' attempted to vote while voting was closed.');
-				parser.sendMessage( msg.sender, 'Voting is not open right now' );
-			}
+			logger.error('User ' + msg.sender + ' attempted to vote while voting was closed.');
+			parser.sendMessage( msg.sender, 'Voting is not open right now' );
 		}
 	} else {
 		syslogger.error( ' Invalid request origin ' + JSON.stringify( req.body ) );
@@ -143,6 +133,7 @@ app.get('/register', (req, res) => {
 			let isValid = /^\d+$/.test(data.number) && data.number.length === 10;
 			if (isValid) {
 				db.runQuery('INSERT INTO voters(phone_number) VALUES(?)', [`+1${data.number}`]).then(() => {
+					parser.sendMessage(`+1${data.number}`, 'You have been registered into our system');
 					callback({success: true});
 				}).catch((err) => {
 					syslogger.error('Cannot register phone number (Database Error): ' + data.number);

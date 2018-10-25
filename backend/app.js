@@ -152,7 +152,7 @@ app.get('/register', (req, res) => {
 app.get( '/result', function( req, res ) {
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	if( currentMode == 'vote' ) {
-		res.status(200).send( JSON.stringify(Object.assign({ mode: 'vote' }, match.compileResult())));
+		res.status(200).send( JSON.stringify(Object.assign({ mode: 'vote' }, match.compileResult(true))));
 	} else if( currentMode == 'poll' ) {
 		var ret = { mode: 'poll', winner: draw.getPollWinner() };
 		res.status(200).send( JSON.stringify( ret ) );

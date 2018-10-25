@@ -209,9 +209,11 @@ class duelMatch {
      * Return the result
      * @return {Object} Object containing the information about the match
 	 */
-	compileResult() {
+	compileResult(doNotEmit) {
 		let result = { state: this.state, type: 'Duel', round: this.roundNumber, timerRemain: this.timer.getRemaining(), data: (this.state === 'IDLE') ? null : this.listOfCandidates };
-		this.socket.emit('resultUpdate', result);
+		if (!doNotEmit) {
+			this.socket.emit('resultUpdate', result);
+		}
 		return result;
 	}
 

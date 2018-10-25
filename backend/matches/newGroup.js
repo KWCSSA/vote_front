@@ -114,7 +114,7 @@ class NewGroupMatch {
   * Return the result
   * @return {Object} Object containing the information about the match
   */
-  compileResult() {
+  compileResult(doNotEmit) {
     let result = {
       state: this.state,
       type: 'NewGroup',
@@ -124,7 +124,9 @@ class NewGroupMatch {
       currentCandidateName: this.currentCandidate? this.currentCandidate.name : null,
       data: this.listOfCandidates
     };
-    this.socket.emit('resultUpdate', result);
+    if (!doNotEmit) {
+			this.socket.emit('resultUpdate', result);
+		}
     return result;
   }
 

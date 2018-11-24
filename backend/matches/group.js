@@ -36,6 +36,7 @@ class groupMatch{
     constructor(){
         this.state = 'IDLE';
         this.initialized = false;
+        this.round = 0;
         this.timer = new timer(120000, ()=>{this.state = 'VOTED'}, 1000);
     }
     
@@ -48,10 +49,11 @@ class groupMatch{
     init(votePerUser, listOfCandidates){
         this.initialized = false;
         //did it this way to prevent escaping
-        return db.runQuery('SELECT * FROM new_candidates where cid in ( ' + listOfCandidates + ' );').then((res) => {
-            this.listOfCandidates = res.map((x) => new groupCandidate(x['cid'], x['name']));
-            this.votePerUser = parseInt(votePerUser) || 3;
-            syslogger.info('Group match initialized, candidates - ' + listOfCandidates);
+        return db.runQuery('SELECT * FROM candidates where c_id in ( ' + listOfCandidates + ' );').then((res) => {
+            this.listOfCandidates = res.map((x) => new groupCandidate(x['c_id'], x['c_name']));
+            this.votePerUser = parseInt(votePerUser) || 1;
+            this.round += 1;
+            syslogger.info('Group match initialized, candidates - ' + listOfCandidates + ' round ' + this.round);
             this.initialized = true;
         }).catch((err) => syslogger.error('Cannot initialize match ' + err));
     }
@@ -77,7 +79,7 @@ class groupMatch{
      * @return {Object} Object containing the information about the match
 	 */
     compileResult(){
-        return {state: this.state, type: 'Group', timerRemain: this.timer.getRemaining(), data: (this.state === 'IDLE') ? null : this.listOfCandidates};
+        return {state: this.state, type: 'Group', timerRemain: this.timer.getRemaining(), data: this.listOfCandidates};
     }
     
     /**
@@ -103,7 +105,7 @@ class groupMatch{
 	 */
     writeResultToDb(){
         for(var candidate in this.listOfCandidates){
-            db.runQuery('INSERT INTO group_result(votes, id) VALUES( ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id]);
+            db.runQuery('INSERT INTO group_result(votes, id, round) VALUES( ?, ?, ? )', [this.listOfCandidates[candidate].vote, this.listOfCandidates[candidate].id, this.round]);
         }
     }
     
@@ -155,14 +157,14 @@ class groupMatch{
         return new Promise((resolve, reject) => {
             if (filtered.length != 0){
                 //process the votes, unique key constraint will prevent the user from voting twice
-                db.runQuery('INSERT INTO group_votes(cids, voter) VALUES( ?, ? )', [ filtered.join('-'), user ]).then(() => {
+                db.runQuery('INSERT INTO group_votes(cids, voter, round) VALUES( ?, ?, ? )', [ filtered.join('-'), user, this.round ]).then(() => {
                     for(var vote in filtered){
                         this.addVoteToCandidate(filtered[vote], 1);
                     }
-                    logger.info('User ' + user + ' has voted on ' + filtered);
+                    logger.info('User ' + user + ' has voted on ' + filtered + 'during round ' + this.round);
                     return resolve(filtered);
                 }).catch((err) => {
-                    logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err );
+                    logger.error('Invalid vote to ' + filtered + ' from ' + user + ' - ' + err + 'during round ' + this.round);
                     return reject();
                 });
             } else {

@@ -68,7 +68,8 @@ app.use(['/votectrl', '/control', '/register'], function (req, res, next) {
 	res.set( 'Access-Control-Allow-Origin', '*' );
 	syslogger.info( 'Incoming system control from ' + ip + ' content ' + JSON.stringify( req.body ) );
 	config.getAttribute('admin_ip').then((res) => {
-		if (res[0]['value'] === ip){
+		let iplist = res.split(" ");
+		if (iplist.includes(ip)){
 			next();
 		} else {
 			throw ('ip does not match' + ip);
